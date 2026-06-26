@@ -156,6 +156,7 @@ class Grid():
             # draw_text('1', int(p[0].x), int(p[0].y), 5, WHITE)
             # draw_text('2', int(p[1].x), int(p[1].y), 5, WHITE)
 
+        # fill in complete rects
         for rect, v in self.rect_corners.items():
             if v["complete"]:
                 draw_rectangle(int(rect[0]), int(rect[1]), int(self.cell_width), int(v["height"]), WHITE) #TODO: ugly int conversions... use some other function?
