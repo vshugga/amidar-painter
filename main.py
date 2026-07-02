@@ -317,8 +317,6 @@ class Trail():
             return
 
         segment = (start, end)
-            
-
         self.line_segments_incomplete.add(segment)
         self.last_incomplete_segment = segment
 
@@ -327,6 +325,8 @@ class Trail():
         pass
 
     def combine_incomplete_segments(self, l1, l2):
+        '''combine two incomplete segments into a whole one, which gets stored in self.line_segments'''
+
         xs = l1[0][0], l1[1][0], l2[0][0], l2[1][0]
         ys = l1[0][1], l1[1][1], l2[0][1], l2[1][1]
         min_x, max_x = min(xs), max(xs)
@@ -345,8 +345,8 @@ class Trail():
                 return
 
         self.line_segments.add(new_segment)
-        self.line_segments_incomplete.remove(l1)
-        self.line_segments_incomplete.remove(l2)
+        # self.line_segments_incomplete.remove(l1)
+        # self.line_segments_incomplete.remove(l2)
         # TODO fixes:
         # A: full segment only seems to get created when movement stops. likely related to self.last_incomplete_segment only being updated when stopping.
 
@@ -354,12 +354,17 @@ class Trail():
 
     def update(self):
         p = self.player
+
+        # needs reset when player crosses an intersection so incomplete segments combine correctly in add_incomplete_segment()
+        # if this isn't done, then incomplete segments would combine over intersections.
         if p.at_intersection:
-            self.last_incomplete_segment = ((), ()) # needs reset when player crosses an intersection so incomplete segments combine correctly in add_incomplete_segment()
+            self.last_incomplete_segment = ((), ()) 
         
+        # if the player is on an incomplete segment (that is not the current one) and not on an intersection, attempt to combine them
         on_incomplete = self.on_incomplete_segment()
-        if on_incomplete and self.last_incomplete_segment != ((),()):
-            self.combine_incomplete_segments(on_incomplete, self.last_incomplete_segment)
+        if on_incomplete and not p.at_intersection:
+            current_trail = (p.cur_trail[0].x, p.cur_trail[0].y), (p.cur_trail[1].x, p.cur_trail[1].y) #TODO: don't like checking this every frame... is there a better way?
+            self.combine_incomplete_segments(on_incomplete, current_trail)
             
 
         #if the player's intersection point changed, create and add a new line segment
