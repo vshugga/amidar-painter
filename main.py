@@ -11,7 +11,7 @@ init_window(window_w, window_h, 'amidar')
 set_exit_key(rl.KEY_ESCAPE)
 debug_key = rl.KEY_F3
 debug_mode = True
-# set_target_fps(5)
+# set_target_fps(144)
 # set_target_fps(1)
 
 
@@ -23,8 +23,8 @@ def debug_catch():
 grid = Grid(window_w, window_h)
 player = Player(grid.rect_origin.x, grid.rect_origin.y+grid.height, 20, 20, grid.v_positions[0], grid)
 trail = Trail(player, grid, BLUE)
-# enemies = [Enemy(v[0].x, v[0].y+1, 20, 20, v, grid) for v in grid.v_positions]
-enemies =  []
+enemies = [Enemy(v[0].x, v[0].y+1, 20, 20, v, grid) for v in grid.v_positions]
+# enemies =  []
 
 while not window_should_close():
 
@@ -39,7 +39,7 @@ while not window_should_close():
         # 'Trail': [
         #     (p.x, p.y) for p in trail.points
         # ],
-        'Trail points': len(trail.points),
+        # 'Trail points': len(trail.points),
         'Trail segments': '...'+str([l for l in trail.line_segments])[-50:],
         'Segment count': len(trail.line_segments),
         'Incomplete count': len(trail.line_segments_incomplete),

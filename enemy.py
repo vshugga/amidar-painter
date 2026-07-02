@@ -10,9 +10,9 @@ class Enemy(Entity):
         super().__init__(x, y, w, h, current_line, grid)
         self.color = ORANGE
         self.direction = Vector2(1, 1) # begin enemies with down direction
-        self.turn_wait = 3 # wait this number of updates before changing directions.
-        self.turn_counter = 0
-        self.speed = 150
+        self.turn_wait = 2 # wait this number of updates before changing directions.
+        self.update_counter = 0
+        self.speed = 500
         # self.timer = Timer()
 
     def line_callback(self, passed_dict:dict):
@@ -21,50 +21,24 @@ class Enemy(Entity):
         - if we are on a vertical line, change the x direction to match that of the new horizontal line.
         - the Y direction is randomly chosen 50/50.
         '''
-        is_up_right = next(iter(passed_dict.values())) # Only looks at the first intersection! (will always use first intersection if there are multiple passed)
 
-        if self.turn_counter < self.turn_wait: # wait for this number of updates to avoid back and forth behavior
+        if self.update_counter < self.turn_wait: # wait for this number of updates to avoid back and forth behavior
             return
-        self.turn_counter = 0
+        self.update_counter = 0
 
-
-        # self.direction = vector2_negate(self.direction)
-        # if self.on_vertical:
-        #     self.direction.x = 0
+        first = next(iter(passed_dict)) # Only looks at the first intersection! (will always use first intersection if there are multiple passed)
+        first_dir = passed_dict[first]["dir"] # tuple direction of the first turn
         
-        d = (-1, 1)
         if self.on_vertical:
-            self.direction.x = 1 if is_up_right else -1
+            self.direction.x = first_dir[0] # set the x direction equal to the line that will be passed
 
-
-        # else:
-        #     self.direction.y = 1 if is_up_right else -1
-
+        d = (-1, 1)
         self.direction.y = choice(d)
-        # self.direction.x = choice(d)
-        # else:
-        #     self.direction.x = choice(d)
-
-
-        # print('callback')
-        pass
 
 
     def update(self):
-
-        # if intersecting_line:
-        #     self.current_line = intersecting_line
-
-        # if self.at_intersection:
-        #     self.direction.x = int(self.is_up_right)
-        #     pass
         
         dt = get_frame_time()
         self.move(dt, self.line_callback)
-        # print(self.move_dir.x, self.move_dir.y)
-        # print(self.direction.x, self.direction.y)
 
-        # if self.move_dir.x == 0 or self.move_dir.y == 0:
-        #     self.direction = vector2_negate(self.direction)
-
-        self.turn_counter += 1
+        self.update_counter += 1
