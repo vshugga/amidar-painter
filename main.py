@@ -148,7 +148,7 @@ h_positions += top_h_line + bottom_h_line
 # determine whether player is going the same direction, changed, or started
 # same direction: get the last trail and extend it 
 
-
+trails = {}
 
 
 class Player():
@@ -157,8 +157,10 @@ class Player():
         self.size = Vector2(w, h)
         # self.line_thickness = line_thickness
         self.direction = Vector2() # player controlled direction
-        self.speed = 100
+        self.speed = 1000
         self.move_dir = Vector2() # actual direction after updates
+        self.previous_dir = Vector2()
+        self.cur_trail = None
 
     def update(self):
         self.direction.x = int(is_key_down(rl.KEY_RIGHT)) - int(is_key_down(rl.KEY_LEFT))
@@ -170,12 +172,16 @@ class Player():
         old_x = self.pos.x
         old_y = self.pos.y
 
+        self.previous_dir.x = self.move_dir.x
+        self.previous_dir.y = self.move_dir.y
+
         if new_x == old_x:
              self.move_dir.x = 0
         if old_y == new_y:
              self.move_dir.y = 0
 
         move_flag = False
+
 
         if new_y != self.pos.y:
             for vl in v_positions:
@@ -194,12 +200,23 @@ class Player():
                 if round(new_y) == hl[0].y and hl[0].x <= new_x <= hl[1].x:
                     if not move_flag:
                         self.pos.y = hl[0].y
+                        move_flag = True
                     self.pos.x = new_x
                     self.move_dir.x = self.direction.x
                     self.move_dir.y = 0
                     break
-
         
+        movedir_change = self.previous_dir.x != self.move_dir.x or self.previous_dir.y != self.move_dir.y
+
+
+        if movedir_change or self.cur_trail is None:
+            print(f'move direction change from {self.previous_dir.x}, {self.previous_dir.y} to {self.move_dir.x}, {self.move_dir.y}')
+            print(len(trails))
+            trails[(old_x, old_y)] = (new_x, new_y)
+            self.cur_trail = (old_x, old_y)
+        
+        if self.move_dir.x != 0 or self.move_dir.y != 0:
+            trails[self.cur_trail] = (new_x, new_y)
         # if old_x != self.pos.x or old_y != self.pos.y:
         #     add_trail(old_x, old_y, self.pos.x, self.pos.y)
 
@@ -229,8 +246,8 @@ while not window_should_close():
 
     #draw player
 
-    # for end, start in trails:
-    #     draw_line_ex(start, end, line_thickness, YELLOW)
+    # for start, end in trails.items():
+    #     draw_line_ex(Vector2(*start), Vector2(*end), line_thickness, YELLOW)
     
     # print(f"trails: {len(trails)} Player pos: {player.pos.x}, {player.pos.y}")
 
@@ -239,7 +256,7 @@ while not window_should_close():
     # if player.move_dir.y != 0:
     #     print('move y')
 
-    print(player.move_dir.x, player.move_dir.y)
+    # print(player.move_dir.x, player.move_dir.y)
 
     player.draw()
 
