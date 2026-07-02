@@ -173,26 +173,20 @@ class Player():
                 self.current_line = self.intersecting_line
                 self.intersection_point.x = self.pos.x
                 self.intersection_point.y = self.pos.y
-            elif on_vertical:
-                if (self.direction.x > 0 and is_up_right) or (self.direction.x < 0 and not is_up_right):
-                    self.current_line = will_pass_line
-
-                    if is_up_right:
-                        self.intersection_point.x = self.current_line[0].x
-                        self.intersection_point.y = self.current_line[0].y
-                    else:
-                        self.intersection_point.x = self.current_line[1].x
-                        self.intersection_point.y = self.current_line[1].y
             else:
-                if (self.direction.y > 0 and is_up_right) or (self.direction.y < 0 and not is_up_right):
-                    self.current_line = will_pass_line
+                input_dir = self.direction.y
+                if on_vertical:
+                    input_dir = self.direction.x
 
-                    if is_up_right:
-                        self.intersection_point.x = self.current_line[0].x
-                        self.intersection_point.y = self.current_line[0].y
-                    else:
-                        self.intersection_point.x = self.current_line[1].x
-                        self.intersection_point.y = self.current_line[1].y
+                if is_up_right: # cleaner code at the expense of more calculations per frame
+                    new_intersection = Vector2(will_pass_line[0].x, will_pass_line[0].y)
+                else:
+                    new_intersection = Vector2(will_pass_line[1].x, will_pass_line[1].y)
+
+                if (input_dir > 0 and is_up_right) or (input_dir < 0 and not is_up_right):
+                    self.current_line = will_pass_line
+                    self.intersection_point = new_intersection
+
 
         self.line_change = False
         if prev_line is not self.current_line:
