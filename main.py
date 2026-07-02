@@ -81,15 +81,18 @@ class Player():
         self.speed = 200
         self.move_dir = Vector2() # actual direction after updates
         self.previous_dir = Vector2()
-        self.cur_trail = [self.pos, self.pos] # trail that is drawn behind the player
+        self.cur_trail = [Vector2(x, y), self.pos] # trail that is drawn behind the player
         self.drawn_pos = Vector2()
         self.drawn_offset = Vector2(self.size.x / -2, self.size.y / -2) # drawing offset so player appears in the middle of the line
         # self.y_offset = ()
         # self.current_vline = ()
         # self.current_hline = ()
+        self.intersection_point = Vector2(self.pos.x, self.pos.y)
         self.current_line = grid.v_positions[0]
+        self.intersecting_line = ()
         self.grid = grid
         self.movedir_change = False
+        self.stop_flag = True
 
     def is_on_line(self, line):
         on_x = line[0].x <= self.drawn_pos.x <= line[1].x
@@ -127,25 +130,45 @@ class Player():
         else:
             add_x = self.direction.x * self.speed * dt
 
-        intersecting_line = self.get_intersecting_line()
-        if intersecting_line:
-            print('On Intersection: ', intersecting_line[0].x, intersecting_line[0].y)
-            if not self.is_vertical(intersecting_line):
+        self.intersecting_line = self.get_intersecting_line()
+        self.line_change = False
+
+        if self.intersecting_line:
+            # print('On Intersection: ', self.intersecting_line[0].x, self.intersecting_line[0].y)
+            
+            if not self.is_vertical(self.intersecting_line):
                 if self.direction.x != 0:
-                    self.current_line = intersecting_line
+                    self.current_line = self.intersecting_line
                     add_x += self.direction.x # nudge the player 1 pixel in the direction they are going so they don't get stuck
+                    self.line_change = True
             else: # intersecting line is horizontal
                 if self.direction.y != 0:
-                    self.current_line = intersecting_line
+                    self.current_line = self.intersecting_line
                     add_y += self.direction.y
+                    self.line_change = True
 
-
+            if self.line_change: # only do this if necessary
+                self.intersection_point = Vector2(self.drawn_pos.x, self.drawn_pos.y)
 
         new_x = self.pos.x + add_x
         new_y = self.pos.y + add_y
 
+        # prev_x = self.pos.x
+        # prev_y = self.pos.y
+
         self.pos.x = clamp(new_x, self.current_line[0].x, self.current_line[1].x)
         self.pos.y = clamp(new_y, self.current_line[0].y, self.current_line[1].y)
+
+        # newdir_x = self.pos.x - prev_x
+        # newdir_y = self.pos.y - prev_y
+        
+        # self.movedir_change = False
+        # self.movedir_change = newdir_x != self.move_dir.x or newdir_y != self.move_dir.y
+
+        # print(self.move_dir.x, self.move_dir.y)
+
+        # print(self.stopped)
+
         # print()
 
     
@@ -158,25 +181,34 @@ class Player():
 class Trail():
     def __init__(self, player:Player, grid:Grid) -> None:
         self.player = player
-        self.points = []
+        self.points = [Vector2(player.pos.x, player.pos.y)]
         self.grid = grid
 
 
     def update(self):
         p = self.player
-        new_point = Vector2(p.pos.x, p.pos.y) # current position
+        
+        if p.line_change:
+            self.points.append(p.intersection_point)
+            p.cur_trail[0] = p.intersection_point
 
-        if p.movedir_change: # when the movement direction changes, update the trail points and set the current trail to current position
-            # debug_catch()
-            last_point = Vector2(p.pos.x, p.pos.y)
 
-            self.points.append(last_point)
-            if len(self.points) > 1 and last_point.x != self.points[-2].x and last_point.y != self.points[-2].y:
-                print(f'mismatch in trail self.points: {last_point.x, last_point.y} AND {self.points[-2].x, self.points[-2].y}')
-            p.cur_trail = [new_point, new_point]
 
-        if p.move_dir.x != 0 or p.move_dir.y != 0: # update the current trail's end point whenever the player moves
-            p.cur_trail[1] = new_point
+
+
+
+        # new_point = Vector2(p.pos.x, p.pos.y) # current position
+        # if p.movedir_change: # when the movement direction changes, update the trail points and set the current trail to current position
+        #     # debug_catch()
+        #     last_point = Vector2(p.pos.x, p.pos.y)
+
+        #     self.points.append(last_point)
+        #     if len(self.points) > 1 and last_point.x != self.points[-2].x and last_point.y != self.points[-2].y:
+        #         print(f'mismatch in trail self.points: {last_point.x, last_point.y} AND {self.points[-2].x, self.points[-2].y}')
+        #     p.cur_trail = [new_point, new_point]
+
+        # if p.move_dir.x != 0 or p.move_dir.y != 0: # update the current trail's end point whenever the player moves
+        #     p.cur_trail[1] = new_point
 
     def draw(self):
         if self.player.cur_trail:
@@ -198,10 +230,11 @@ while not window_should_close():
         'Y':player.pos.y,
         'Drawn X':player.drawn_pos.x,
         'Drawn Y':player.drawn_pos.y,
+        'Intersection':(player.intersection_point.x,player.intersection_point.y),
         # 'Line intersection':(player.current_hline[0].y if player.current_hline),
-        # 'Trail points': [
-        #     (p.x, p.y) for p in trail_points
-        # ]
+        'Trail': [
+            (p.x, p.y) for p in trail.points
+        ],
         'Trail points': len(trail.points),
         'Move direction':(player.move_dir.x, player.move_dir.y)
     }
