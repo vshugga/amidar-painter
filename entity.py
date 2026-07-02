@@ -32,7 +32,6 @@ class Entity():
 
     # TODO: transition this to use the intersection pass method instead
     def is_on_line(self, x, y, line=None, point_1=None, point_2=None):
-
         if point_1 and point_2:
             p1 = point_1
             p2 = point_2
@@ -71,10 +70,16 @@ class Entity():
             for l in self.grid.v_positions + self.grid.h_positions:
                 if self.is_on_line(p1.x, p1.y, line=l) and l != self.current_line:
                     lines[int_point] = {"dir":(1, 1),"line":l}
-                    break
+                    # break # 
             return lines
 
+        reverse_sort = False
+        sort_key = None
+
         if p1.x == p2.x: # if the points make a vertical line, check horizontal lines
+            sort_key = lambda item: item[0].y
+            if p1.y >= p2.y: # if the player is going up, reverse sort order
+                reverse_sort = True
             for l in self.grid.h_positions: 
                 left = l[0]
                 right = l[1]
@@ -89,9 +94,12 @@ class Entity():
                     int_point = right if self.is_on_line(right.x, right.y, point_1=p1, point_2=p2) else left # it has to be either left or right point
                     xdir = 1 if left.x == p1.x else -1
                     lines[int_point] = {"dir":(xdir,0),"line":l}
-                    break
+                    # break # do not break because we want all the intersecting lines
 
         if p1.y == p2.y: # same as above but check for vertical lines if p1-p2 is horizontal
+            sort_key = lambda item: item[0].x
+            if p1.x >= p2.x:
+                reverse_sort = True
             for l in self.grid.v_positions: 
                 top = l[0]
                 bottom = l[1]
@@ -103,9 +111,14 @@ class Entity():
                     int_point = top if self.is_on_line(top.x, top.y, point_1=p1, point_2=p2) else bottom
                     ydir = 1 if top.y == p1.y else -1
                     lines[int_point] = {"dir":(0,ydir),"line":l}
-                    break
+                    # break
+        
+        # sort the intersecting lines based on the order the player would pass them (their direction)
+        # left/right: x decreasing/increasing
+        # up/down: y decreasing/increasing
+        sorted_dict = dict(sorted(lines.items(), key=sort_key, reverse=reverse_sort))
 
-        return lines
+        return sorted_dict
 
     def is_vertical(self, line): #TODO: move to grid?
         return line[0].x == line[1].x
@@ -150,7 +163,8 @@ class Entity():
             # store the points the player did pass + turned onto in a new variable for the trail script to use instead of passed_dict.
 
             for int_vector, inner_dict in self.will_pass.items():
-                self.intersection_point = int_vector
+                self.intersection_point.x = int_vector.x
+                self.intersection_point.y = int_vector.y
                 new_line = inner_dict["line"]
                 x_dir, y_dir = inner_dict["dir"] 
 
