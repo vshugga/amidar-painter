@@ -21,7 +21,7 @@ class Enemy(Entity):
         - if we are on a vertical line, change the x direction to match that of the new horizontal line.
         - the Y direction is randomly chosen 50/50.
         '''
-        is_up_right = next(iter(passed_dict.values())) # Only looks at the first intersection! (will always turn down first intersection if there are multiple)
+        is_up_right = next(iter(passed_dict.values())) # Only looks at the first intersection! (will always use first intersection if there are multiple passed)
 
         if self.turn_counter < self.turn_wait: # wait for this number of updates to avoid back and forth behavior
             return
