@@ -8,7 +8,7 @@ init_window(window_w, window_h, 'amidar')
 set_exit_key(rl.KEY_ESCAPE)
 debug_key = rl.KEY_F3
 debug_mode = True
-# set_target_fps(3)
+# set_target_fps(5)
 
 
 def debug_catch():
@@ -173,8 +173,6 @@ class Player():
                 self.current_line = self.intersecting_line
                 self.intersection_point.x = self.pos.x
                 self.intersection_point.y = self.pos.y
-                # self.line_change = True
-
             elif on_vertical:
                 if (self.direction.x > 0 and is_up_right) or (self.direction.x < 0 and not is_up_right):
                     self.current_line = will_pass_line
@@ -185,9 +183,6 @@ class Player():
                     else:
                         self.intersection_point.x = self.current_line[1].x
                         self.intersection_point.y = self.current_line[1].y
-                    # add_x += self.direction.x
-                    # self.line_change = True
-                    # print('turn X')
             else:
                 if (self.direction.y > 0 and is_up_right) or (self.direction.y < 0 and not is_up_right):
                     self.current_line = will_pass_line
@@ -198,9 +193,6 @@ class Player():
                     else:
                         self.intersection_point.x = self.current_line[1].x
                         self.intersection_point.y = self.current_line[1].y
-                    # add_y += self.direction.y
-                    # self.line_change = True
-                    # print('turn Y')
 
         self.line_change = False
         if prev_line is not self.current_line:
@@ -239,25 +231,39 @@ class Trail():
     def __init__(self, player:Player, grid:Grid) -> None:
         self.player = player
         self.points = [Vector2(player.pos.x, player.pos.y)]
+        self.last_intersection = Vector2(player.pos.x, player.pos.y)
+        self.line_segments = set()
         self.grid = grid
 
 
     def update(self):
         p = self.player
         
-        if p.movedir_change:
-            if p.line_change:
-                ipoint = Vector2(p.intersection_point.x, p.intersection_point.y)
-                self.points.append(ipoint)
-            else:
-                self.points.append(p.drawn_pos)
-            p.cur_trail[0] = p.intersection_point
+        # if p.movedir_change:
+        #     if p.line_change:
+        #         ipoint = Vector2(p.intersection_point.x, p.intersection_point.y)
+        #         self.points.append(ipoint)
+        #     else:
+        #         self.points.append(p.drawn_pos) # Incomplete line segment
+        #     p.cur_trail[0] = p.intersection_point
+        
+
+        if p.line_change:
+            new_intersection = Vector2(p.intersection_point.x, p.intersection_point.y)
+            segment_start = (self.last_intersection.x, self.last_intersection.y)
+            segment_end = (new_intersection.x, new_intersection.y)
+            # self.lines.append(newseg)
+            self.line_segments.add((segment_start, segment_end))
+            self.last_intersection = new_intersection
 
 
     def draw(self):
-        if self.player.cur_trail:
-            draw_spline_segment_linear(self.player.cur_trail[0], self.player.cur_trail[1], grid.line_thickness, YELLOW)
-        draw_spline_linear(self.points, len(self.points), grid.line_thickness, YELLOW)
+        # if self.player.cur_trail:
+        #     draw_spline_segment_linear(self.player.cur_trail[0], self.player.cur_trail[1], grid.line_thickness, YELLOW)
+        
+        # draw_spline_linear(self.points, len(self.points), grid.line_thickness, YELLOW)
+        for l in self.line_segments:
+            draw_line_ex(*l, 8.0, BLUE)
 
     
 
@@ -280,6 +286,8 @@ while not window_should_close():
         #     (p.x, p.y) for p in trail.points
         # ],
         'Trail points': len(trail.points),
+        'Trail segments': '...'+str([l for l in trail.line_segments])[-50:],
+        'Current trail':((player.cur_trail[0].x, player.cur_trail[0].y), (player.cur_trail[1].x, player.cur_trail[1].y)),
         'Move direction':(player.move_dir.x, player.move_dir.y)
     }
     if is_key_pressed(debug_key):
