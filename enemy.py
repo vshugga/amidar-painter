@@ -1,18 +1,20 @@
 from pyray import *
 import raylib as rl
 from grid import Grid
+from player import Player
 from entity import Entity
 from timer import Timer
 from random import choice
 
 class Enemy(Entity):
-    def __init__(self, x, y, w, h, current_line, grid:Grid) -> None:
+    def __init__(self, x, y, w, h, current_line, grid:Grid, player:Player) -> None:
         super().__init__(x, y, w, h, current_line, grid)
         self.color = ORANGE
+        self.player = player
         self.direction = Vector2(1, 1) # begin enemies with down direction
         self.turn_wait = 2 # wait this number of updates before changing directions.
         self.update_counter = 0
-        self.speed = 500
+        self.speed = 100
         # self.timer = Timer()
 
     def line_callback(self, passed_dict:dict):
@@ -35,10 +37,23 @@ class Enemy(Entity):
         d = (-1, 1)
         self.direction.y = choice(d)
 
+    def check_player_collision(self, prev_pos):
+        '''check whether this enemy cros paths with the player next frame'''
+        min_x = min(prev_pos.x, self.pos.x)
+        max_x = max(prev_pos.x, self.pos.x)
+        min_y = min(prev_pos.y, self.pos.y)
+        max_y = max(prev_pos.y, self.pos.y)
+        in_x = min_x <= self.player.pos.x <= max_x
+        in_y = min_y <= self.player.pos.y <= max_y
+
+        if in_x and in_y:
+            print('Collision!')
+
 
     def update(self):
-        
         dt = get_frame_time()
+        prev_pos = Vector2(self.pos.x, self.pos.y)
         self.move(dt, self.line_callback)
-
         self.update_counter += 1
+        self.check_player_collision(prev_pos)
+
