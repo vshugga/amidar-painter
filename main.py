@@ -160,7 +160,7 @@ class Player():
         self.speed = 1000
         self.move_dir = Vector2() # actual direction after updates
         self.previous_dir = Vector2()
-        self.cur_trail = None
+        self.cur_trail = None # trail that is drawn behind the player
 
     def update(self):
         self.direction.x = int(is_key_down(rl.KEY_RIGHT)) - int(is_key_down(rl.KEY_LEFT))
@@ -221,11 +221,12 @@ class Player():
         new_point = Vector2(new_x, new_y)
         if self.cur_trail is None:
             self.cur_trail = [last_point, new_point]
-        if movedir_change:
+
+        if movedir_change: # when the movement direction changes, update the trail points and set the current trail to current position
             trail_points.append(last_point)
             self.cur_trail = [new_point, new_point]
         
-        if self.move_dir.x != 0 or self.move_dir.y != 0:
+        if self.move_dir.x != 0 or self.move_dir.y != 0: # update the current trail's end point whenever the player moves
             self.cur_trail[1] = new_point
 
 
