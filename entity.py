@@ -29,6 +29,7 @@ class Entity():
         '''Get the entities current line as a tuple ((x1, y1), (x2, y2)) '''
         return ((self.current_line[0].x, self.current_line[0].y), (self.current_line[1].x, self.current_line[1].y))
 
+
     # TODO: transition this to use the intersection pass method instead
     def is_on_line(self, x, y, line=None, point_1=None, point_2=None):
 
@@ -45,6 +46,7 @@ class Entity():
         on_y = min(p1.y, p2.y) <= y <= max(p1.y, p2.y)
         return on_x and on_y
 
+
     def get_intersecting_line(self):
         '''Finds whether entity is exactly on an intersection, returns the other line'''
         for l in self.grid.v_positions + self.grid.h_positions:
@@ -57,8 +59,9 @@ class Entity():
     # TODO: possibly combine with above function somehow to avoid looping through lines twice
     def get_passed_lines(self, p1, p2) -> dict:
         '''
-        Get the intersecting lines between two points, and the side (True for right/down, False for left/up) for each.\n
-        Returns a dict: {intersection point: {"side":bool, "line":line}}\n
+        Get the intersecting lines between two points, and the direction as a tuple (x, y) for each.\n
+        If the direction is (1, 1), that means the player has stopped at an intersection (p1 and p2 are equal).
+        Returns a dict: {intersection point: {"dir":tuple, "line":line}}\n
         Can return the self.current_line.
         '''
         #TODO: Possible optimization - only check the lines that are attached to the current line. (store this for each line in the grid)
@@ -67,7 +70,7 @@ class Entity():
             int_point = p1
             for l in self.grid.v_positions + self.grid.h_positions:
                 if self.is_on_line(p1.x, p1.y, line=l) and l != self.current_line:
-                    lines[int_point] = {"side":1,"line":l}
+                    lines[int_point] = {"dir":(1, 1),"line":l}
                     break
             return lines
 
@@ -84,7 +87,8 @@ class Entity():
                  # store if the lines y value is within p1 - p2 - note that left.y will = right.y because l is horizontal
                 if min(p1.y, p2.y) <= left.y <= max(p1.y, p2.y):
                     int_point = right if self.is_on_line(right.x, right.y, point_1=p1, point_2=p2) else left # it has to be either left or right point
-                    lines[int_point] = {"side":left.x == p1.x,"line":l}
+                    xdir = 1 if left.x == p1.x else -1
+                    lines[int_point] = {"dir":(xdir,0),"line":l}
                     break
 
         if p1.y == p2.y: # same as above but check for vertical lines if p1-p2 is horizontal
@@ -97,7 +101,8 @@ class Entity():
                     continue
                 if min(p1.x, p2.x) <= top.x <= max(p1.x, p2.x):
                     int_point = top if self.is_on_line(top.x, top.y, point_1=p1, point_2=p2) else bottom
-                    lines[int_point] = {"side":top.x == p1.x,"line":l}
+                    ydir = 1 if top.y == p1.y else -1
+                    lines[int_point] = {"dir":(0,ydir),"line":l}
                     break
 
         return lines
@@ -143,58 +148,24 @@ class Entity():
             # we have a bunch of intersection points from the current frame to where the player would be on the next one. (in passed_dict)
             # loop over them and get the first one that is in the direction the player wants to go, and set that to the current line.
             # store the points the player did pass + turned onto in a new variable for the trail script to use instead of passed_dict.
-            # if self.intersecting_line: 
-            #     pass
 
             for int_vector, inner_dict in self.will_pass.items():
                 self.intersection_point = int_vector
                 new_line = inner_dict["line"]
-                line_is_upright = inner_dict["side"] 
+                x_dir, y_dir = inner_dict["dir"] 
 
-                input_dir = self.direction.y
-                if self.on_vertical:
-                    input_dir = self.direction.x
+                input_dir = self.direction
 
-                if (input_dir > 0 and line_is_upright) or (input_dir < 0 and not line_is_upright):
+                if x_dir and y_dir:
+                    if input_dir.x or input_dir.y:
+                        self.current_line = new_line
+                        break      
+                elif (input_dir.x == x_dir != 0) or (input_dir.y == y_dir != 0):
                     self.current_line = new_line
-                    break
+                    break      
 
                 self.passed_intersections.append(int_vector)
 
-        pass
-        '''
-            #first_point = next(iter(self.passed_dict)) # ONLY GETS THE FIRST ONE!
-            # will_pass_line = self.passed_dict[first_point]["line"]
-            # is_up_right = self.passed_dict[first_point]["side"]
-        # catches whether player is at T intersection; if the player crossed an intersection of the line they are on
-            # hey, this is causing the current line to bounce back and forth...
-            if self.current_line in self.passed_dict and self.intersecting_line: 
-                self.current_line = self.intersecting_line
-                self.intersection_point.x = self.pos.x
-                self.intersection_point.y = self.pos.y
-            else:
-                # if the passed line is up or to the right, use its first point as the intersection
-                will_pass_start = Vector2(will_pass_line[0].x, will_pass_line[0].y)
-                will_pass_end = Vector2(will_pass_line[1].x, will_pass_line[1].y)
-                # if is_up_right: 
-                #     #issue: setting the intersection as the first point of the line fails when that line is vertical, or the top/bottom horizontal
-                # else:
-                #     new_intersection = Vector2(will_pass_line[1].x, will_pass_line[1].y)
-                if self.is_on_line(self.current_line, will_pass_start.x, will_pass_start.y):
-                    new_intersection = will_pass_start
-                elif self.is_on_line(self.current_line, will_pass_end.x, will_pass_end.y):
-                    new_intersection = will_pass_end
-                else:
-                    raise Exception('this should not trigger.')
-
-                input_dir = self.direction.y
-                if self.on_vertical:
-                    input_dir = self.direction.x
-
-                if (input_dir > 0 and is_up_right) or (input_dir < 0 and not is_up_right):
-                    self.current_line = will_pass_line
-
-                self.intersection_point = new_intersection'''
 
         prev_x = self.pos.x
         prev_y = self.pos.y

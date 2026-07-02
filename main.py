@@ -11,7 +11,7 @@ init_window(window_w, window_h, 'amidar')
 set_exit_key(rl.KEY_ESCAPE)
 debug_key = rl.KEY_F3
 debug_mode = True
-# set_target_fps(144)
+# set_target_fps(20)
 # set_target_fps(1)
 
 
