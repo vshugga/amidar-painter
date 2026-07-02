@@ -148,7 +148,7 @@ h_positions += top_h_line + bottom_h_line
 # determine whether player is going the same direction, changed, or started
 # same direction: get the last trail and extend it 
 
-trails = {}
+trail_points = []
 
 
 class Player():
@@ -209,16 +209,24 @@ class Player():
         movedir_change = self.previous_dir.x != self.move_dir.x or self.previous_dir.y != self.move_dir.y
 
 
-        if movedir_change or self.cur_trail is None:
-            print(f'move direction change from {self.previous_dir.x}, {self.previous_dir.y} to {self.move_dir.x}, {self.move_dir.y}')
-            print(len(trails))
-            trails[(old_x, old_y)] = (new_x, new_y)
-            self.cur_trail = (old_x, old_y)
+        # if movedir_change or self.cur_trail is None:
+        #     print(f'move direction change from {self.previous_dir.x}, {self.previous_dir.y} to {self.move_dir.x}, {self.move_dir.y}')
+        #     print(len(trails))
+        #     trails[(old_x, old_y)] = (new_x, new_y)
+        #     self.cur_trail = (old_x, old_y)
+        
+        # if self.move_dir.x != 0 or self.move_dir.y != 0:
+        #     trails[self.cur_trail] = (new_x, new_y)
+        last_point = Vector2(old_x, old_y)
+        new_point = Vector2(new_x, new_y)
+        if self.cur_trail is None:
+            self.cur_trail = [last_point, new_point]
+        if movedir_change:
+            trail_points.append(last_point)
+            self.cur_trail = [new_point, new_point]
         
         if self.move_dir.x != 0 or self.move_dir.y != 0:
-            trails[self.cur_trail] = (new_x, new_y)
-        # if old_x != self.pos.x or old_y != self.pos.y:
-        #     add_trail(old_x, old_y, self.pos.x, self.pos.y)
+            self.cur_trail[1] = new_point
 
 
     def draw(self):
@@ -246,9 +254,16 @@ while not window_should_close():
 
     #draw player
 
-    for start, end in trails.items():
-        draw_line_ex(Vector2(*start), Vector2(*end), line_thickness, YELLOW)
+    # for start, end in trails.items():
+    #     draw_line_ex(Vector2(*start), Vector2(*end), line_thickness, YELLOW)
+    if player.cur_trail:
+        # print(player.cur_trail[0].x, player.cur_trail[0].y)
+        draw_spline_segment_linear(player.cur_trail[0], player.cur_trail[1], line_thickness, YELLOW)
+    draw_spline_linear(trail_points, len(trail_points), line_thickness, YELLOW)
+
+
     
+
     # print(f"trails: {len(trails)} Player pos: {player.pos.x}, {player.pos.y}")
 
     # if player.move_dir.x != 0:
