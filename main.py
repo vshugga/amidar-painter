@@ -19,7 +19,6 @@ class Game():
 
         self.grid = Grid(window_w, window_h)
         self.player = Player(self.grid.rect_origin.x, self.grid.rect_origin.y+self.grid.height, 20, 20, self.grid.v_positions[0], self.grid)
-        self.trail = Trail(self.player, self.grid, BLUE)
         self.enemies = [Enemy(v[0].x, v[0].y+1, 20, 20, v, self.grid, self.player) for v in self.grid.v_positions]
         # enemies =  []
 
@@ -36,14 +35,9 @@ class Game():
             'Drawn X':self.player.drawn_pos.x,
             'Drawn Y':self.player.drawn_pos.y,
             'Intersection':(self.player.intersection_point.x,self.player.intersection_point.y),
-            # 'Line intersection':(self.player.current_hline[0].y if self.player.current_hline),
-            # 'Trail': [
-            #     (p.x, p.y) for p in trail.points
-            # ],
-            # 'Trail points': len(trail.points),
-            'Trail segments': '...'+str([l for l in self.trail.line_segments])[-50:],
-            'Segment count': len(self.trail.line_segments),
-            'Incomplete count': len(self.trail.line_segments_incomplete),
+            'Trail segments': '...'+str([l for l in self.player.trail.line_segments])[-50:],
+            'Segment count': len(self.player.trail.line_segments),
+            'Incomplete count': len(self.player.trail.line_segments_incomplete),
             'Current trail':((self.player.cur_trail[0].x, self.player.cur_trail[0].y), (self.player.cur_trail[1].x, self.player.cur_trail[1].y)),
             'Move direction':(self.player.move_dir.x, self.player.move_dir.y),
             'Complete rects':[k for k,v in self.grid.rect_corners.items() if v['complete']],
@@ -51,14 +45,14 @@ class Game():
             'Hit cooldown':self.player.hit_cooldown.time_left
         }
         self.player.update()
-        self.trail.update()
+        # self.trail.update()
         for e in self.enemies:
             e.update()
 
     def draw(self):
         # Draw the grid thing
         self.grid.draw()
-        self.trail.draw()
+        self.player.trail.draw()
         self.player.draw()
         for e in self.enemies:
             e.draw()
@@ -71,10 +65,10 @@ class Game():
             # if self.player.current_hline:
             #     draw_line_v(self.player.current_hline[0], self.player.current_hline[1],GREEN)
             draw_circle_v(self.player.intersection_point, 8.0, ORANGE)
-            if self.trail.last_incomplete_segment != ((),()):
+            if self.player.trail.last_incomplete_segment != ((),()):
                 draw_line_ex(
-                    Vector2(self.trail.last_incomplete_segment[0][0],self.trail.last_incomplete_segment[0][1]),
-                    Vector2(self.trail.last_incomplete_segment[1][0],self.trail.last_incomplete_segment[1][1]),
+                    Vector2(self.player.trail.last_incomplete_segment[0][0],self.player.trail.last_incomplete_segment[0][1]),
+                    Vector2(self.player.trail.last_incomplete_segment[1][0],self.player.trail.last_incomplete_segment[1][1]),
                     4.0, PURPLE)
 
             for k, v in self.grid.rect_corners.items():

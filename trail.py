@@ -1,10 +1,9 @@
 from pyray import *
 import raylib as rl
-from player import Player
 from grid import Grid
 
 class Trail():
-    def __init__(self, player:Player, grid:Grid, color:Color) -> None:
+    def __init__(self, player, grid:Grid, color:Color) -> None:
         self.player = player
         self.points = [Vector2(player.pos.x, player.pos.y)]
         # self.last_intersection = Vector2(player.pos.x, player.pos.y)

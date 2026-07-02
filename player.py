@@ -3,6 +3,7 @@ import raylib as rl
 from grid import Grid
 from entity import Entity
 from timer import Timer
+from trail import Trail
 # from enemy import Enemy
 
 class Player(Entity):
@@ -12,7 +13,7 @@ class Player(Entity):
         self.color = GREEN
         self.enemy_collisions = 0 # number of enemy collisions
         self.hit_cooldown = Timer(3)
-
+        self.trail = Trail(self, self.grid, BLUE)
 
     def update(self):
         self.direction.x = int(is_key_down(rl.KEY_RIGHT)) - int(is_key_down(rl.KEY_LEFT))
@@ -24,7 +25,7 @@ class Player(Entity):
         dt = get_frame_time()
         self.move(dt)
         self.hit_cooldown.update()
-
+        self.trail.update()
 
     def enemy_hit(self, enemy):
         if self.hit_cooldown.active:
