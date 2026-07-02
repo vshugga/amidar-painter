@@ -80,6 +80,7 @@ class Grid():
 
     def calculate_segments(self):
         '''Calculates the segments required to be filled for each rectangle.'''
+        # stores all the rect's corners as keys, the value is a dict where {"segments": list of segments, "complete": whether the rect is completed}
         self.rect_corners = {}
         bottom_y = self.rect_origin.y + self.height
         right_x = self.rect_origin.x + self.width
@@ -135,8 +136,14 @@ class Grid():
             last_segment = ((corner_x, corner_y),last_point)
             v["segments"].append(last_segment)
 
+        # stores every grid segment as a key, and the values a list of rects it belongs to (their upper right point)
+        # used to quickly check rects for completion
+        self.segment_rect_dict = {}
 
-        # self.rect_corners = {} 
+        for corner_point, v in self.rect_corners.items():
+            segments = v["segments"]  
+            for s in segments:
+                self.segment_rect_dict.setdefault(s, []).append(corner_point)
 
 
     def draw(self):

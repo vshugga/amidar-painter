@@ -73,7 +73,7 @@ while not window_should_close():
                 Vector2(trail.last_incomplete_segment[1][0],trail.last_incomplete_segment[1][1]),
                 4.0, PURPLE)
 
-        for k, v in grid.square_corners.items():
+        for k, v in grid.rect_corners.items():
             draw_circle(int(k[0]), int(k[1]), 3.0, PURPLE)
         debug_catch()
 
