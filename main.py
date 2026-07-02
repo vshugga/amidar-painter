@@ -91,7 +91,7 @@ class Player():
         self.size = Vector2(w, h)
         # self.line_thickness = line_thickness
         self.direction = Vector2() # player controlled direction
-        self.speed = 100
+        self.speed = 500
         self.move_dir = Vector2() # actual direction after updates
         self.cur_trail = [Vector2(x, y), self.pos] # trail that is drawn behind the player
         self.drawn_pos = Vector2()
@@ -266,11 +266,7 @@ class Trail():
         self.current_intersection = Vector2(player.pos.x, player.pos.y)
         self.line_segments = set()
         self.last_incomplete_segment = ((), ())
-        # self.last_segment_endpos = ()
-
-        #TODO: it is redundant to have two of these storing the same data, but it is faster to draw this way.
         self.line_segments_incomplete = set() 
-        # self.incomplete_dict = {} # keys = the line containing incomplete segments, values = list of incomplete segments
         
         self.grid = grid
         self.color = color
@@ -308,7 +304,7 @@ class Trail():
         # if the last ending point exists, use it as the new starting point and remove the old segment (instead of the intersection)
         if last_end:
             start = last_start  
-            self.line_segments_incomplete.remove(self.last_incomplete_segment)
+            self.line_segments_incomplete.discard(self.last_incomplete_segment) # discard will avoid errors when the segment was already removed
         else:
             start = (self.current_intersection.x, self.current_intersection.y)
 
@@ -325,7 +321,12 @@ class Trail():
         for p in start, end:
             if p not in grid.intersections:
                 raise Exception('The segment to be added is invalid! both points were not intersections.')
-        segment = (start, end)
+
+        # reorder start and end so they will always be consistent order when adding to the set.
+        n_start = (min(start[0], end[0]),min(start[1], end[1]))
+        n_end = (max(start[0], end[0]),max(start[1], end[1]))
+
+        segment = (n_start, n_end)
         self.line_segments.add(segment)
         self.clean_incomplete_segments(segment)
 
@@ -415,11 +416,12 @@ class Trail():
         # get the lines from the dictionary values and combine them into one set
         # incomplete = self.line_segments_incomplete.values()
         # incomplete = set.union(*incomplete) if incomplete else set()
-
+        
+        # TODO: Use spline methods instead.
         for l in self.line_segments_incomplete:
             draw_line_ex(*l, 8.0, ORANGE)
         for l in self.line_segments:
-            draw_line_ex(*l, 8.0, self.color) # TODO: Use spline methods instead.
+            draw_line_ex(*l, 8.0, self.color) 
     
 
 grid = Grid()
