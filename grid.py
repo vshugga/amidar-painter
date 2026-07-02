@@ -109,6 +109,8 @@ class Grid():
                     last_point = (x, y)
                     if (x, y) in self.rect_corners or y >= bottom_y:
                         break
+            
+            v["height"] = y - corner_y # store this for drawing the complete rect later
 
             # since we are at the start of another square, just add the cell width to get the bottom right corner.
             bottom_right = (x+self.cell_width, y)
@@ -154,6 +156,9 @@ class Grid():
             # draw_text('1', int(p[0].x), int(p[0].y), 5, WHITE)
             # draw_text('2', int(p[1].x), int(p[1].y), 5, WHITE)
 
+        for rect, v in self.rect_corners.items():
+            if v["complete"]:
+                draw_rectangle(int(rect[0]), int(rect[1]), int(self.cell_width), int(v["height"]), WHITE) #TODO: ugly int conversions... use some other function?
 
 
 
