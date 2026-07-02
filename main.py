@@ -8,7 +8,7 @@ init_window(window_w, window_h, 'amidar')
 set_exit_key(rl.KEY_ESCAPE)
 debug_key = rl.KEY_F3
 debug_mode = True
-set_target_fps(60)
+# set_target_fps(3)
 
 
 def debug_catch():
@@ -96,12 +96,12 @@ class Player():
 
     # TODO: transition this to use the intersection pass method instead
     def is_on_line(self, line):
-        on_x = line[0].x <= self.drawn_pos.x <= line[1].x
-        on_y = line[0].y <= self.drawn_pos.y <= line[1].y
+        on_x = line[0].x <= self.pos.x <= line[1].x
+        on_y = line[0].y <= self.pos.y <= line[1].y
         return on_x and on_y
 
     def get_intersecting_line(self):
-        '''Finds whether player is exactly on an intersection'''
+        '''Finds whether player is exactly on an intersection, returns the other line'''
         for l in self.grid.v_positions + self.grid.h_positions:
             if l == self.current_line:
                 continue
@@ -118,13 +118,17 @@ class Player():
             # ((l[0].x == p1.x and p1.y <= l[0].y <= p2.y)
             #  or (l[1].x == p1.x and p1.y <= l[1].y <= p2.y))]
             for l in self.grid.h_positions:
+                # if l == self.current_line:
+                #     continue
                 if l[0].x != p1.x and l[1].x != p1.x:
                     continue
                 if min(p1.y, p2.y) <= l[0].y <= max(p1.y, p2.y):
                     return l, int(l[0].x == p1.x)
 
-        elif p1.y == p2.y:
+        if p1.y == p2.y:
             for l in self.grid.v_positions:
+                # if l == self.current_line:
+                #     continue
                 if l[0].y != p1.y and l[1].y != p1.y:
                     continue
                 if min(p1.x, p2.x) <= l[0].x <= max(p1.x, p2.x):
@@ -154,13 +158,20 @@ class Player():
         else:
             add_x = self.direction.x * self.speed * dt
 
-        self.intersecting_line = self.get_intersecting_line()
-        self.line_change = False
+        new_x = self.pos.x + add_x
+        new_y = self.pos.y + add_y
 
+        x_clamped = clamp(new_x, self.current_line[0].x, self.current_line[1].x)
+        y_clamped = clamp(new_y, self.current_line[0].y, self.current_line[1].y)
+        
+        self.intersecting_line = self.get_intersecting_line()
+        will_pass_line, side = self.get_passed_line(self.pos, Vector2(x_clamped, y_clamped))
+        self.line_change = False
+        
         # if self.intersecting_line:
         #     # print('On Intersection: ', self.intersecting_line[0].x, self.intersecting_line[0].y)
         #     if not self.is_vertical(self.intersecting_line):
-        #         if self.direction.x != 0:
+        #         if self.direction.x != 0: #TODO: Change these to be left/right up/down specific probably
         #             self.current_line = self.intersecting_line
         #             add_x += self.direction.x # nudge the player 1 pixel in the direction they are going so they don't get stuck
         #             self.line_change = True
@@ -169,63 +180,27 @@ class Player():
         #             self.current_line = self.intersecting_line
         #             add_y += self.direction.y
         #             self.line_change = True
-
-        #     if self.line_change: # only do this if necessary
-        #         self.intersection_point = Vector2(self.drawn_pos.x, self.drawn_pos.y)
-
-
-        prev_x = self.pos.x
-        prev_y = self.pos.y
-
-        new_x = self.pos.x + add_x
-        new_y = self.pos.y + add_y
-
-        x_clamped = clamp(new_x, self.current_line[0].x, self.current_line[1].x)
-        y_clamped = clamp(new_y, self.current_line[0].y, self.current_line[1].y)
-        
-        will_pass_line, side = self.get_passed_line(self.pos, Vector2(x_clamped, y_clamped))
-
-        # if passed_line:
-        #     # print()
-        #     # self.line_change = False
-        #     if on_vertical:
-        #         if (self.direction.x > 0 and side) or (self.direction.x < 0 and not side):
-        #             self.current_line = passed_line
-        #             # self.line_change = True
-        #             # print('turn X')
-        #     else:
-        #         if (self.direction.y > 0 and side) or (self.direction.y < 0 and not side):
-        #             self.current_line = passed_line
-        #             # self.line_change = True
-        #             # print('turn Y')
-
-        
-        if self.intersecting_line:
-            # print('On Intersection: ', self.intersecting_line[0].x, self.intersecting_line[0].y)
-            if not self.is_vertical(self.intersecting_line):
-                if self.direction.x != 0: #TODO: Change these to be left/right up/down specific probably
-                    self.current_line = self.intersecting_line
-                    add_x += self.direction.x # nudge the player 1 pixel in the direction they are going so they don't get stuck
-                    self.line_change = True
-            else: # intersecting line is horizontal
-                if self.direction.y != 0:
-                    self.current_line = self.intersecting_line
-                    add_y += self.direction.y
-                    self.line_change = True
-        elif will_pass_line:
-            if on_vertical:
+        # print()
+        if will_pass_line:
+            # print('will pass')
+            if will_pass_line == self.current_line and self.intersecting_line:
+                self.current_line = self.intersecting_line
+            elif on_vertical:
                 if (self.direction.x > 0 and side) or (self.direction.x < 0 and not side):
                     self.current_line = will_pass_line
                     add_x += self.direction.x
-                    # self.line_change = True
+                    self.line_change = True
                     # print('turn X')
             else:
                 if (self.direction.y > 0 and side) or (self.direction.y < 0 and not side):
                     self.current_line = will_pass_line
                     add_y += self.direction.y
-
-                    # self.line_change = True
+                    self.line_change = True
                     # print('turn Y')
+
+
+        prev_x = self.pos.x
+        prev_y = self.pos.y
 
         new_x = prev_x + add_x
         new_y = prev_y + add_y
@@ -236,6 +211,7 @@ class Player():
 
         self.pos.x = new_x_clamped
         self.pos.y = new_y_clamped
+
 
         newdir_x = self.pos.x - prev_x
         newdir_y = self.pos.y - prev_y
