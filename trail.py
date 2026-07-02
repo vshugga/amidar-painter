@@ -114,12 +114,27 @@ class Trail():
             
 
         #if the player's intersection point changed, create and add a new line segment
-        if self.current_intersection.x != p.intersection_point.x or self.current_intersection.y != p.intersection_point.y:
-            new_intersection = Vector2(p.intersection_point.x, p.intersection_point.y)
-            segment_start = (self.current_intersection.x, self.current_intersection.y)
-            segment_end = (new_intersection.x, new_intersection.y)
-            self.add_complete_segment(segment_start, segment_end)
-            self.current_intersection = new_intersection
+        # if self.current_intersection.x != p.intersection_point.x or self.current_intersection.y != p.intersection_point.y:
+
+        # if the player passed intersections, add line segments for each
+        if p.passed_dict and (self.current_intersection.x != p.intersection_point.x or self.current_intersection.y != p.intersection_point.y):
+            intersections = [(self.current_intersection.x, self.current_intersection.y)]
+            for (p1, p2), side in p.passed_dict.items():
+                point = p1 if side else p2
+                intsect = (point.x, point.y)
+                intersections.append(intsect)
+            
+            for i, intsect in enumerate(intersections[:1]):
+                start = intersections[i-1]
+                end = intsect
+                self.add_complete_segment(start, end)
+
+
+            # new_intersection = Vector2(p.intersection_point.x, p.intersection_point.y)
+            # segment_end = (new_intersection.x, new_intersection.y)
+            # self.add_complete_segment(segment_start, segment_end)
+            # self.current_intersection = new_intersection
+            self.current_intersection = Vector2(p.intersection_point.x, p.intersection_point.y)
             p.cur_trail[0] = p.intersection_point
         # if players movement direction changed, store an incomplete line segment 
         # (also only if a full line segment WASNT made)
@@ -152,7 +167,7 @@ class Trail():
     def update_completion(self, segment):
         '''Called whenever a complete segment is created to update completed rects.'''
         # get all the rects that this line is part of
-        rects = self.grid.segment_rect_dict[segment] # if this causes a keyerror at some point, it is likely because the ordering of points is wrong in calculate segments.
+        rects = self.grid.segment_rect_dict[segment] # if this causes a keyerror at some point, its because the segment is invalid!
         for r in rects:
             flag = False
             for seg in self.grid.rect_corners[r]["segments"]:

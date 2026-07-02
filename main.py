@@ -23,8 +23,8 @@ def debug_catch():
 grid = Grid(window_w, window_h)
 player = Player(grid.rect_origin.x, grid.rect_origin.y+grid.height, 20, 20, grid.v_positions[0], grid)
 trail = Trail(player, grid, BLUE)
-enemies = [Enemy(grid.rect_origin.x, grid.rect_origin.y+1, 20, 20, grid.v_positions[0], grid)]
-# enemies =  []
+# enemies = [Enemy(v[0].x, v[0].y+1, 20, 20, v, grid) for v in grid.v_positions]
+enemies =  []
 
 while not window_should_close():
 

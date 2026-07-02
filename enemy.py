@@ -12,15 +12,17 @@ class Enemy(Entity):
         self.direction = Vector2(1, 1) # begin enemies with down direction
         self.turn_wait = 3 # wait this number of updates before changing directions.
         self.turn_counter = 0
-        self.speed = 1000
+        self.speed = 150
         # self.timer = Timer()
 
-    def line_callback(self, will_pass_line, is_up_right):
+    def line_callback(self, passed_dict:dict):
         '''callback for the entity class move() that adjusts direction based on line. ONLY called when will_pass_line is a line.
         What it does:
         - if we are on a vertical line, change the x direction to match that of the new horizontal line.
         - the Y direction is randomly chosen 50/50.
         '''
+        is_up_right = next(iter(passed_dict.values())) # Only looks at the first intersection! (will always turn down first intersection if there are multiple)
+
         if self.turn_counter < self.turn_wait: # wait for this number of updates to avoid back and forth behavior
             return
         self.turn_counter = 0
