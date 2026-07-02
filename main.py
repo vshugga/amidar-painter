@@ -1,3 +1,4 @@
+from math import ceil
 from pyray import *
 import raylib as rl
 from random import randrange
@@ -6,7 +7,13 @@ w, h = 1080, 720
 
 init_window(w, h, 'amidar')
 set_exit_key(rl.KEY_ESCAPE)
+debug_key = rl.KEY_F3
+debug_mode = True
 
+
+def debug_catch():
+    if is_key_down(rl.KEY_D):
+        pass
 
 rect_x, rect_y = 650, 650
 line_thickness = 8.0
@@ -157,10 +164,15 @@ class Player():
         self.size = Vector2(w, h)
         # self.line_thickness = line_thickness
         self.direction = Vector2() # player controlled direction
-        self.speed = 1000
+        self.speed = 100
         self.move_dir = Vector2() # actual direction after updates
         self.previous_dir = Vector2()
-        self.cur_trail = None # trail that is drawn behind the player
+        self.cur_trail = [self.pos, self.pos] # trail that is drawn behind the player
+        self.drawn_pos = Vector2()
+        self.drawn_offset = Vector2(self.size.x / -2, self.size.y / -2) # drawing offset so player appears in the middle of the line
+        # self.y_offset = ()
+        self.current_vline = ()
+        self.current_hline = ()
 
     def update(self):
         self.direction.x = int(is_key_down(rl.KEY_RIGHT)) - int(is_key_down(rl.KEY_LEFT))
@@ -169,6 +181,8 @@ class Player():
         dt = get_frame_time()
         new_x = self.pos.x + (self.direction.x * self.speed * dt)
         new_y = self.pos.y + (self.direction.y * self.speed * dt)
+        new_pos = Vector2(new_x, new_y)
+
         old_x = self.pos.x
         old_y = self.pos.y
 
@@ -180,14 +194,13 @@ class Player():
         if old_y == new_y:
              self.move_dir.y = 0
 
-        move_flag = False
-
+        x_move, y_move = False, False
 
         if new_y != self.pos.y:
             for vl in v_positions:
-                # if -1 < vl[0].x - new_x < 1 and vl[0].y <= new_y <= vl[1].y:
                 if round(new_x) == vl[0].x and vl[0].y <= new_y <= vl[1].y:
-                    move_flag = True
+                    self.current_vline = vl
+                    y_move = True
                     self.pos.x = vl[0].x
                     self.pos.y = new_y
                     self.move_dir.y = self.direction.y
@@ -196,45 +209,61 @@ class Player():
         
         if new_x != self.pos.x:
             for hl in h_positions:
-                # if -1 < hl[0].y - new_y < 1 and hl[0].x <= new_x <= hl[1].x:
                 if round(new_y) == hl[0].y and hl[0].x <= new_x <= hl[1].x:
-                    if not move_flag:
-                        self.pos.y = hl[0].y
-                        move_flag = True
-                    self.pos.x = new_x
+                    self.current_hline = hl
+                    x_move = True
+                    if not y_move:
+                        self.pos.y = hl[0].y # keeps player on H line when trying to go on vertical inner line
+                        self.pos.x = new_x
                     self.move_dir.x = self.direction.x
                     self.move_dir.y = 0
                     break
-        
+
+
         movedir_change = self.previous_dir.x != self.move_dir.x or self.previous_dir.y != self.move_dir.y
 
-
-        # if movedir_change or self.cur_trail is None:
-        #     print(f'move direction change from {self.previous_dir.x}, {self.previous_dir.y} to {self.move_dir.x}, {self.move_dir.y}')
-        #     print(len(trails))
-        #     trails[(old_x, old_y)] = (new_x, new_y)
-        #     self.cur_trail = (old_x, old_y)
         
-        # if self.move_dir.x != 0 or self.move_dir.y != 0:
-        #     trails[self.cur_trail] = (new_x, new_y)
-        last_point = Vector2(old_x, old_y)
-        new_point = Vector2(new_x, new_y)
-        if self.cur_trail is None:
-            self.cur_trail = [last_point, new_point]
+        stopped = self.move_dir.x == 0 and self.move_dir.y == 0
+        started = self.previous_dir.x == 0 and self.previous_dir.y == 0
+
+        # effectively determines if the player just turned and sets the player position to the intersection of the two lines they are on 
+        # this is to prevent the trail from being diagonal (possible if the player position has a decimal on both axes)
+        if movedir_change and self.current_hline and self.current_vline and not (stopped or started):
+            self.pos.y = self.current_hline[0].y
+            self.pos.x = self.current_vline[0].x
+        
+
+        if self.pos.x % 1 != 0 and self.pos.y % 1 != 0: # if this triggers, then diagonal trails are possible (bad!)
+            pass
+        
+        if self.move_dir.x != 0 and self.move_dir.y != 0:
+            pass
+        
+
+        # print(old_x, old_y)
+        new_point = Vector2(new_x, new_y) # current position
+        # print(new_x, new_y)
+        # debug_catch()
 
         if movedir_change: # when the movement direction changes, update the trail points and set the current trail to current position
+            # debug_catch()
+            last_point = Vector2(self.pos.x, self.pos.y)
+            # if self.current_hline:
+            #     last_point.y = self.current_hline[0].y
+            # if self.current_vline:
+            #     last_point.x = self.current_vline[0].x
+
             trail_points.append(last_point)
+            if len(trail_points) > 1 and last_point.x != trail_points[-2].x and last_point.y != trail_points[-2].y:
+                print(f'mismatch in trail points: {last_point.x, last_point.y} AND {trail_points[-2].x, trail_points[-2].y}')
             self.cur_trail = [new_point, new_point]
-        
+
         if self.move_dir.x != 0 or self.move_dir.y != 0: # update the current trail's end point whenever the player moves
             self.cur_trail[1] = new_point
 
-
     def draw(self):
-        x_offset = (self.size.x / -2)# + (line_thickness / 2)
-        y_offset = (self.size.y / -2)# - (line_thickness / 2) 
-        p = Vector2(self.pos.x + x_offset, self.pos.y + y_offset)
-        draw_rectangle_v(p, self.size, GREEN)
+        self.drawn_pos = vector2_add(Vector2(round(self.pos.x), round(self.pos.y)), self.drawn_offset)
+        draw_rectangle_v(self.drawn_pos, self.size, GREEN)
 
 
 
@@ -242,13 +271,25 @@ player = Player(rect_origin.x, rect_origin.y+rect_y, 20, 20)
 
 
 
-def debug_catch():
-    if is_key_pressed(rl.KEY_D):
-        pass
-
-
 while not window_should_close():
-    debug_catch()
+
+    debug_values = {
+        'FPS':get_fps(),
+        'X':player.pos.x, 
+        'Y':player.pos.y,
+        'Drawn X':player.drawn_pos.x,
+        'Drawn Y':player.drawn_pos.y,
+        # 'Line intersection':(player.current_hline[0].y if player.current_hline),
+        # 'Trail points': [
+        #     (p.x, p.y) for p in trail_points
+        # ]
+        'Trail points': len(trail_points)
+    }
+    if is_key_pressed(debug_key):
+        debug_mode = not debug_mode
+
+
+
     player.update()
 
     begin_drawing()
@@ -268,20 +309,19 @@ while not window_should_close():
     draw_spline_linear(trail_points, len(trail_points), line_thickness, YELLOW)
 
 
-    
-
-    # print(f"trails: {len(trails)} Player pos: {player.pos.x}, {player.pos.y}")
-
-    # if player.move_dir.x != 0:
-    #     print('move x') 
-    # if player.move_dir.y != 0:
-    #     print('move y')
-
-    # print(player.move_dir.x, player.move_dir.y)
-
     player.draw()
 
-    draw_fps(0,0)
+
+    if debug_mode:
+        draw_text('\n'.join([f'{k}: {v}' for k, v in debug_values.items()]), 0, 0, 20, WHITE)
+        if player.current_vline:
+            draw_line_v(player.current_vline[0], player.current_vline[1],GREEN)
+        if player.current_hline:
+            draw_line_v(player.current_hline[0], player.current_hline[1],GREEN)
+        
+        debug_catch()
+
+    # draw_fps(0,0)
     
     end_drawing()
 
