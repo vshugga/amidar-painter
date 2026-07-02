@@ -8,14 +8,11 @@ class Grid():
         self.height = height 
         self.line_thickness = line_thickness
         self.rect_origin = Vector2((window_width/2)-(width/2),(window_height/2)-(height/2))
-        # rect = Rectangle(rect_origin.x, rect_origin.y, rect_x, rect_y) # perimeter
+        self.round_scores = 50 # round rect scores to the nearest 50
+        self.score_divisor = 100
 
-        # self.v_lines_num = vertical_lines
-        # self.h_lines_minmax = (h_lines_min,h_lines_max) # number of horizontal lines in a column
         self.h_lines_range = (height // 10, width // 3) # min/max height of a cell
-
         self.cell_width = width/(vertical_lines-1)
-        # pairs of vectors for inner lines top/bottom point
         self.v_positions = [(
                 Vector2(self.rect_origin.x+self.cell_width*i,self.rect_origin.y), 
                 Vector2(self.rect_origin.x+self.cell_width*i,self.rect_origin.y+height)) 
@@ -24,18 +21,12 @@ class Grid():
         self.vertical_x_positions = [self.rect_origin.x+self.cell_width*i for i in range(vertical_lines)]
 
         self.h_positions = [] # pairs of vectors for lines left/right point
-        # self.v_positions = []
         #TODO: This algorithm needs rewritten to avoid horizontal lines that are directly adjacent
         # probably have the h_lines thing place them as it goes, placing the earliest it can (have only the first column be random)
 
         for vl in range(vertical_lines-1): # -1 to prevent H lines on last v line
             x = self.vertical_x_positions[vl]
             y = self.rect_origin.y
-            # top_h_segment = (Vector2(x,y), Vector2(x+self.cell_width,y))
-            # bottom_h_segment = (Vector2(x,y+height), Vector2(x+self.cell_width,y+height))
-            # self.h_positions += [top_h_segment, bottom_h_segment]
-
-            # last_y = y
             h_lines = randrange(h_lines_min, h_lines_max)
             for hl in range(h_lines):
                 ly = y
@@ -51,18 +42,6 @@ class Grid():
                 end_h = Vector2(x+self.cell_width,y)
                 self.h_positions += [(start_h, end_h)]
 
-                # start_v = Vector2(x, last_y)
-                # end_v = Vector2(x, y)
-                # self.v_positions += [(start_v, end_v)]
-                # last_y = y
-
-            # self.v_positions += [(Vector2(x, last_y), Vector2(x, bottom_h_segment[0].y))] # have to add the last vertical line for this column
-
-        
-
-        # for h in self.h_positions:
-
-        
 
         #TODO: fix the corner edges           
         top_h_line = [(Vector2(self.rect_origin.x, self.rect_origin.y), Vector2(self.rect_origin.x+width, self.rect_origin.y))]
@@ -77,6 +56,7 @@ class Grid():
 
         self.calculate_segments()
         self.calculate_scores()
+
 
     def calculate_segments(self):
         '''Calculates the segments required to be filled for each rectangle.'''
@@ -111,7 +91,7 @@ class Grid():
                         break
             
             v["height"] = y - corner_y # store this for drawing the complete rect later
-
+            v["center"] = (corner_x + (self.cell_width / 2), corner_y + (v["height"] / 2))
             # since we are at the start of another square, just add the cell width to get the bottom right corner.
             bottom_right = (x+self.cell_width, y)
             if bottom_right not in self.intersections:
@@ -150,7 +130,9 @@ class Grid():
 
     def calculate_scores(self): 
         for (corner_x, corner_y), v in self.rect_corners.items():
-            v["score"] = v["height"] * self.cell_width # TODO: round to 50 or something
+            v["score"] = v["height"] * self.cell_width 
+            v["score"] = v["score"] / self.score_divisor
+            v["score"] = round(v["score"] / self.round_scores) * self.round_scores
 
 
     def update_completion(self, segment, line_segments, player):
@@ -169,11 +151,7 @@ class Grid():
                 if not completed:
                     rect["complete"] = True
                     player.score += self.rect_corners[r]["score"]
-
-
-
-
-                
+        
 
     def draw(self):
         for p in self.h_positions + self.v_positions:
@@ -185,7 +163,8 @@ class Grid():
         for rect, v in self.rect_corners.items():
             if v["complete"]:
                 draw_rectangle(int(rect[0]), int(rect[1]), int(self.cell_width), int(v["height"]), WHITE) #TODO: ugly int conversions... use some other function?
-
+            else:
+                draw_text(str(v["score"]), int(v["center"][0]), int(v["center"][1]), 5, WHITE)
 
 
         # intersections = self.v_positions + self.h_positions
