@@ -60,21 +60,6 @@ class Player():
         self.direction = Vector2()
         self.speed = 100
 
-    def move_x(self, x, y):
-        for hl in h_positions:
-            if -1 < hl[0].y - y < 1 and hl[0].x <= x <= hl[1].x:
-                self.pos.x = x
-                return
-
-    def move_y(self, x, y):
-        for vl in v_positions:
-            if -1 < vl[0].x - x < 1 and vl[0].y <= y <= vl[1].y:
-                self.pos.y = y
-                return
-
-
-
-
     def update(self):
         self.direction.x = int(is_key_down(rl.KEY_RIGHT)) - int(is_key_down(rl.KEY_LEFT))
         self.direction.y = int(is_key_down(rl.KEY_DOWN)) - int(is_key_down(rl.KEY_UP))
@@ -85,14 +70,22 @@ class Player():
 
 
         if new_x != self.pos.x:
-            self.move_x(new_x, new_y)
+            for hl in h_positions:
+                if -1 < hl[0].y - new_y < 1 and hl[0].x <= new_x <= hl[1].x:
+                    self.pos.y = hl[0].y
+                    self.pos.x = new_x
+                    break
         if new_y != self.pos.y:
-            self.move_y(new_x, new_y)
+            for vl in v_positions:
+                if -1 < vl[0].x - new_x < 1 and vl[0].y <= new_y <= vl[1].y:
+                    # self.pos.x = vl[0].x # for some reason this breaks movement to h lines
+                    self.pos.y = new_y
+                    break
 
 
     def draw(self):
-        x_offset = 0#(self.size.x / -2) + (line_thickness / 2)
-        y_offset = 0#(self.size.y / -2) - (line_thickness / 2) 
+        x_offset = (self.size.x / -2)# + (line_thickness / 2)
+        y_offset = (self.size.y / -2)# - (line_thickness / 2) 
         p = Vector2(self.pos.x + x_offset, self.pos.y + y_offset)
         draw_rectangle_v(p, self.size, GREEN)
 
@@ -109,7 +102,6 @@ while not window_should_close():
     begin_drawing()
 
     # Draw the grid thing
-    # draw_rectangle_lines_ex(rect, line_thickness, RED)
     for l in v_positions:
         draw_line_ex(*l,line_thickness, RED)
     for h in h_positions:
