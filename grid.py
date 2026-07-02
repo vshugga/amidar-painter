@@ -10,28 +10,32 @@ class Grid():
         self.rect_origin = Vector2((window_width/2)-(width/2),(window_height/2)-(height/2))
         # rect = Rectangle(rect_origin.x, rect_origin.y, rect_x, rect_y) # perimeter
 
-        self.v_lines_num = vertical_lines
+        # self.v_lines_num = vertical_lines
         # self.h_lines_minmax = (h_lines_min,h_lines_max) # number of horizontal lines in a column
         self.h_lines_range = (height // 10, width // 3) # min/max height of a cell
 
-        self.cell_width = width/(self.v_lines_num-1)
+        self.cell_width = width/(vertical_lines-1)
         # pairs of vectors for inner lines top/bottom point
         self.v_positions = [(
                 Vector2(self.rect_origin.x+self.cell_width*i,self.rect_origin.y), 
                 Vector2(self.rect_origin.x+self.cell_width*i,self.rect_origin.y+height)) 
-            for i in range(self.v_lines_num)
+            for i in range(vertical_lines)
         ]
+        self.vertical_x_positions = [self.rect_origin.x+self.cell_width*i for i in range(vertical_lines)]
 
-        # pairs of vectors for inner horizontal lines left/right point
-        self.h_positions = [] 
-
+        self.h_positions = [] # pairs of vectors for lines left/right point
+        # self.v_positions = []
         #TODO: This algorithm needs rewritten to avoid horizontal lines that are directly adjacent
         # probably have the h_lines thing place them as it goes, placing the earliest it can (have only the first column be random)
 
         for vl in range(vertical_lines-1): # -1 to prevent H lines on last v line
-            # x = rect_origin.x+(vl*cell_width)
-            x = self.v_positions[vl][0].x
+            x = self.vertical_x_positions[vl]
             y = self.rect_origin.y
+            # top_h_segment = (Vector2(x,y), Vector2(x+self.cell_width,y))
+            # bottom_h_segment = (Vector2(x,y+height), Vector2(x+self.cell_width,y+height))
+            # self.h_positions += [top_h_segment, bottom_h_segment]
+
+            # last_y = y
             h_lines = randrange(h_lines_min, h_lines_max)
             for hl in range(h_lines):
                 ly = y
@@ -43,9 +47,22 @@ class Grid():
                         # print('half on col ' + str(vl))
                     else:
                         break
-                nl1 = Vector2(x, y)
-                nl2 = Vector2(x+self.cell_width,y)
-                self.h_positions += [(nl1, nl2)]
+                start_h = Vector2(x, y)
+                end_h = Vector2(x+self.cell_width,y)
+                self.h_positions += [(start_h, end_h)]
+
+                # start_v = Vector2(x, last_y)
+                # end_v = Vector2(x, y)
+                # self.v_positions += [(start_v, end_v)]
+                # last_y = y
+
+            # self.v_positions += [(Vector2(x, last_y), Vector2(x, bottom_h_segment[0].y))] # have to add the last vertical line for this column
+
+        
+
+        # for h in self.h_positions:
+
+        
 
         #TODO: fix the corner edges           
         top_h_line = [(Vector2(self.rect_origin.x, self.rect_origin.y), Vector2(self.rect_origin.x+width, self.rect_origin.y))]
@@ -57,12 +74,79 @@ class Grid():
         for v1, v2 in self.h_positions + self.v_positions:
             self.intersections.add((v1.x, v1.y))
             self.intersections.add((v2.x, v2.y))
-            
+
+        self.calculate_segments()
+
+
+    def calculate_segments(self):
+        '''Calculates the segments required to be filled for each rectangle.'''
+        self.rect_corners = {}
+        bottom_y = self.rect_origin.y + self.height
+        right_x = self.rect_origin.x + self.width
+        
+        # Find all rect's top left corners (unique)
+        for start, end in self.v_positions+self.h_positions:
+            if start.y >= bottom_y: #avoid adding the bottom hline!
+                continue
+            if start.x >= right_x:
+                continue
+            self.rect_corners[(start.x, start.y)] = {"segments":[],"complete":False}
+
+
+        # go around the top left corner point, adding segments as we go (down, right, up, left)
+        for (corner_x, corner_y), v in self.rect_corners.items():
+            last_point = (corner_x, corner_y)
+            x = corner_x
+            y = corner_y
+
+            # add = lambda x, y: (y := y + 1)
+
+            while True: # get to the next square corner (or the bottom) directly below, adding segments along the way
+                y += 1
+                if (x, y) in self.intersections:
+                    v["segments"].append((last_point, (x, y)))
+                    last_point = (x, y)
+                    if (x, y) in self.rect_corners or y >= bottom_y:
+                        break
+
+            # since we are at the start of another square, just add the cell width to get the bottom right corner.
+            bottom_right = (x+self.cell_width, y)
+            if bottom_right not in self.intersections:
+                raise Exception("Hey, this point is not valid! it needs to be an intersection")
+
+            bottom_segment = (last_point, bottom_right)
+            v["segments"].append(bottom_segment)
+
+            last_point = bottom_right
+            x += self.cell_width
+            # y -= 1
+            while True: # get to the top right square corner directly above, adding segments along the way
+                y -= 1
+                if (x, y) in self.intersections:
+                    v["segments"].append(((x, y), last_point)) # Last point must come second to avoid order issues!
+                    last_point = (x, y)
+                    if y <= corner_y:
+                        break
+
+            if last_point not in self.intersections:
+                raise Exception("Hey, this point is not valid! it needs to be an intersection")
+
+            # add the final segment, which is from the starting corner to the right corner (which is last point)
+            last_segment = ((corner_x, corner_y),last_point)
+            v["segments"].append(last_segment)
+
+
+        # self.rect_corners = {} 
 
 
     def draw(self):
-        for p in self.v_positions + self.h_positions:
+        for p in self.h_positions + self.v_positions:
             draw_line_ex(*p,self.line_thickness, RED) #TODO: use spline instead
+            # draw_text('1', int(p[0].x), int(p[0].y), 5, WHITE)
+            # draw_text('2', int(p[1].x), int(p[1].y), 5, WHITE)
+
+
+
 
         # intersections = self.v_positions + self.h_positions
         # draw_spline_linear(intersections, len(intersections), self.line_thickness, RED)

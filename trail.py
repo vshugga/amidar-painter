@@ -150,11 +150,7 @@ class Trail():
     def draw(self):
         if self.player.cur_trail:
             draw_spline_segment_linear(self.player.cur_trail[0], self.player.cur_trail[1], self.grid.line_thickness, self.color)
-        
-        # get the lines from the dictionary values and combine them into one set
-        # incomplete = self.line_segments_incomplete.values()
-        # incomplete = set.union(*incomplete) if incomplete else set()
-        
+
         # TODO: Use spline methods instead.
         for l in self.line_segments_incomplete:
             draw_line_ex(*l, 8.0, ORANGE)

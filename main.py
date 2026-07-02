@@ -55,9 +55,9 @@ while not window_should_close():
     clear_background(BLACK)
 
     # Draw the grid thing
-    player.draw()
     grid.draw()
     trail.draw()
+    player.draw()
 
 
     if debug_mode:
@@ -72,6 +72,9 @@ while not window_should_close():
                 Vector2(trail.last_incomplete_segment[0][0], trail.last_incomplete_segment[0][1]),
                 Vector2(trail.last_incomplete_segment[1][0],trail.last_incomplete_segment[1][1]),
                 4.0, PURPLE)
+
+        for k, v in grid.square_corners.items():
+            draw_circle(int(k[0]), int(k[1]), 3.0, PURPLE)
         debug_catch()
 
     end_drawing()
