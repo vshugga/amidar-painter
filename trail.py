@@ -74,7 +74,7 @@ class Trail():
         segment = (n_start, n_end)
         self.line_segments.add(segment)
         self.clean_incomplete_segments(segment)
-        self.update_completion(segment)
+        self.grid.update_completion(segment, self.line_segments, self.player)
 
 
     def combine_incomplete_segments(self, l1, l2):
@@ -160,19 +160,6 @@ class Trail():
             if xs_contained and ys_contained:
                 self.line_segments_incomplete.remove(l)
 
-
-    def update_completion(self, segment):
-        '''Called whenever a complete segment is created to update completed rects.'''
-        # get all the rects that this line is part of
-        rects = self.grid.segment_rect_dict[segment] # if this causes a keyerror at some point, its because the segment is invalid!
-        for r in rects:
-            flag = False
-            for seg in self.grid.rect_corners[r]["segments"]:
-                if seg not in self.line_segments:
-                    flag = True
-                    break
-            if not flag:
-                self.grid.rect_corners[r]["complete"] = True
 
 
     def draw(self):

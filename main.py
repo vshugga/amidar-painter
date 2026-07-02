@@ -45,7 +45,8 @@ class Game():
             'Move direction':(self.player.move_dir.x, self.player.move_dir.y),
             'Complete rects':[k for k,v in self.grid.rect_corners.items() if v['complete']],
             'Hit cooldown':self.player.hit_cooldown.time_left,
-            'Lives':self.player.lives
+            'Lives':self.player.lives,
+            'Score':self.player.score
         }
         self.player.update()
         for e in self.enemies:

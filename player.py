@@ -14,7 +14,8 @@ class Player(Entity):
         self.lives = 3
         self.hit_cooldown = Timer(3)
         self.trail = Trail(self, self.grid, BLUE)
-
+        self.score = 0
+        
     def update(self):
         self.direction.x = int(is_key_down(rl.KEY_RIGHT)) - int(is_key_down(rl.KEY_LEFT))
         self.direction.y = int(is_key_down(rl.KEY_DOWN)) - int(is_key_down(rl.KEY_UP))

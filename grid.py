@@ -76,7 +76,7 @@ class Grid():
             self.intersections.add((v2.x, v2.y))
 
         self.calculate_segments()
-
+        self.calculate_scores()
 
     def calculate_segments(self):
         '''Calculates the segments required to be filled for each rectangle.'''
@@ -148,7 +148,32 @@ class Grid():
                 self.segment_rect_dict.setdefault(s, []).append(corner_point)
 
 
-            
+    def calculate_scores(self): 
+        for (corner_x, corner_y), v in self.rect_corners.items():
+            v["score"] = v["height"] * self.cell_width # TODO: round to 50 or something
+
+
+    def update_completion(self, segment, line_segments, player):
+        '''Called whenever a complete segment is created to update completed rects.'''
+        # get all the rects that this line is part of
+        rects = self.segment_rect_dict[segment] # if this causes a keyerror at some point, its because the segment is invalid!
+        for r in rects:
+            rect = self.rect_corners[r]
+            flag = False
+            for seg in rect["segments"]:
+                if seg not in line_segments:
+                    flag = True
+                    break
+            if not flag:
+                completed = rect["complete"] 
+                if not completed:
+                    rect["complete"] = True
+                    player.score += self.rect_corners[r]["score"]
+
+
+
+
+                
 
     def draw(self):
         for p in self.h_positions + self.v_positions:
