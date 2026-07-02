@@ -321,8 +321,13 @@ class Trail():
         self.last_incomplete_segment = segment
 
 
-    def pop_incomplete_segment(self):
-        pass
+    def add_complete_segment(self, start, end):
+        for p in start, end:
+            if p not in grid.intersections:
+                raise Exception('The segment to be added is invalid! both points were not intersections.')
+        segment = (start, end)
+        self.line_segments.add(segment)
+        self.clean_incomplete_segments(segment)
 
     def combine_incomplete_segments(self, l1, l2):
         '''combine two incomplete segments into a whole one, which gets stored in self.line_segments'''
@@ -336,20 +341,16 @@ class Trail():
         if start == end: # they must differ!
             return 
 
-        new_segment = (start, end)
+        # new_segment = (start, end)
 
 
         # the new segment must start/end on intersectinos (where start != end, done above)
-        for s in new_segment:
+        for s in start, end:
             if s not in grid.intersections:
                 return
 
-        self.line_segments.add(new_segment)
-        # self.line_segments_incomplete.remove(l1)
-        # self.line_segments_incomplete.remove(l2)
-        # TODO fixes:
-        # A: full segment only seems to get created when movement stops. likely related to self.last_incomplete_segment only being updated when stopping.
-
+        # self.line_segments.add(new_segment)
+        self.add_complete_segment(start, end)
         pass        
 
     def update(self):
@@ -372,7 +373,7 @@ class Trail():
             new_intersection = Vector2(p.intersection_point.x, p.intersection_point.y)
             segment_start = (self.current_intersection.x, self.current_intersection.y)
             segment_end = (new_intersection.x, new_intersection.y)
-            self.line_segments.add((segment_start, segment_end))
+            self.add_complete_segment(segment_start, segment_end)
             self.current_intersection = new_intersection
             p.cur_trail[0] = p.intersection_point
         # if players movement direction changed, store an incomplete line segment 
@@ -380,30 +381,30 @@ class Trail():
         elif p.movedir_change:
             self.add_incomplete_segment()
 
-        # self.combine_incomplete_segments()
-        test = self.on_incomplete_segment()
-        
-        pass
 
-    def lines_overlap(self, l1, l2):
-        pass
 
-    # def combine_incomplete_segments(self):
+    def clean_incomplete_segments(self, seg):
+        '''Remove all incomplete segments that are contained within a single complete one'''
+        # new_incompletes = set()
+        if seg not in self.line_segments:
+            raise Exception('hey, this broke :/ - the seg line needs to be a valid complete segment.') 
 
-    #     pass
-        # p = self.player
-        # curline = p.get_curline_tuple()
+        seg_xs = seg[0][0], seg[1][0]
+        seg_ys = seg[0][1], seg[1][1]
 
-        # # list of segments on the current line
-        # segments_on_line = self.incomplete_dict.get(curline, []) 
+        to_remove = set()
 
-        # xy = 1 if p.on_vertical else 0
+        for l in list(self.line_segments_incomplete):
+            l_xs = l[0][0], l[1][0]
+            l_ys = l[0][1], l[1][1]
 
-        # ranges = [(n[0][xy], n[1][xy]) for n in segments_on_line]
+            xs_contained = min(seg_xs) <= min(l_xs) <= max(l_xs) <= max(seg_xs)
+            ys_contained = min(seg_ys) <= min(l_ys) <= max(l_ys) <= max(seg_ys)
 
-        # pass
+            if xs_contained and ys_contained:
+                self.line_segments_incomplete.remove(l)
 
-            
+
 
 
 
