@@ -246,8 +246,8 @@ while not window_should_close():
 
     #draw player
 
-    # for start, end in trails.items():
-    #     draw_line_ex(Vector2(*start), Vector2(*end), line_thickness, YELLOW)
+    for start, end in trails.items():
+        draw_line_ex(Vector2(*start), Vector2(*end), line_thickness, YELLOW)
     
     # print(f"trails: {len(trails)} Player pos: {player.pos.x}, {player.pos.y}")
 
