@@ -1,4 +1,5 @@
 from operator import itemgetter
+from xxlimited import new
 from pyray import *
 import raylib as rl
 from random import randrange
@@ -9,7 +10,7 @@ init_window(window_w, window_h, 'amidar')
 set_exit_key(rl.KEY_ESCAPE)
 debug_key = rl.KEY_F3
 debug_mode = True
-set_target_fps(30)
+# set_target_fps(30)
 
 
 def debug_catch():
@@ -69,6 +70,13 @@ class Grid():
 
         self.h_positions += top_h_line + bottom_h_line
 
+        self.intersections = set()
+        for v1, v2 in self.h_positions + self.v_positions:
+            self.intersections.add((v1.x, v1.y))
+            self.intersections.add((v2.x, v2.y))
+            
+
+
     def draw(self):
         for p in self.v_positions + self.h_positions:
             draw_line_ex(*p,self.line_thickness, RED) #TODO: use spline instead
@@ -83,7 +91,7 @@ class Player():
         self.size = Vector2(w, h)
         # self.line_thickness = line_thickness
         self.direction = Vector2() # player controlled direction
-        self.speed = 300
+        self.speed = 100
         self.move_dir = Vector2() # actual direction after updates
         self.cur_trail = [Vector2(x, y), self.pos] # trail that is drawn behind the player
         self.drawn_pos = Vector2()
@@ -272,13 +280,14 @@ class Trail():
         p = self.player
         for l in self.line_segments_incomplete: # TODO: optimization: loop through just the segments on current line.
             if l == self.last_incomplete_segment:
-                return
+                continue
             xs = l[0][0], l[1][0]
             ys = l[0][1], l[1][1]
             if min(xs) <= p.drawn_pos.x <= max(xs) and min(ys) <= p.drawn_pos.y <= max(ys):
                 return l
     
     def add_incomplete_segment(self):
+        '''Creates an incomplete line segment and combines with the previous one if it exists, else start it at the last intersection.'''
         p = self.player
 
         end = (p.drawn_pos.x, p.drawn_pos.y)
@@ -314,16 +323,45 @@ class Trail():
         self.last_incomplete_segment = segment
 
 
-
-
     def pop_incomplete_segment(self):
         pass
+
+    def combine_incomplete_segments(self, l1, l2):
+        xs = l1[0][0], l1[1][0], l2[0][0], l2[1][0]
+        ys = l1[0][1], l1[1][1], l2[0][1], l2[1][1]
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
+        start, end = (min_x, min_y), (max_x, max_y)
+        
+        if start == end: # they must differ!
+            return 
+
+        new_segment = (start, end)
+
+
+        # the new segment must start/end on intersectinos (where start != end, done above)
+        for s in new_segment:
+            if s not in grid.intersections:
+                return
+
+        self.line_segments.add(new_segment)
+        self.line_segments_incomplete.remove(l1)
+        self.line_segments_incomplete.remove(l2)
+        # TODO fixes:
+        # A: full segment only seems to get created when movement stops. likely related to self.last_incomplete_segment only being updated when stopping.
+
+        pass        
 
     def update(self):
         p = self.player
         if p.at_intersection:
             self.last_incomplete_segment = ((), ()) # needs reset when player crosses an intersection so incomplete segments combine correctly in add_incomplete_segment()
         
+        on_incomplete = self.on_incomplete_segment()
+        if on_incomplete and self.last_incomplete_segment != ((),()):
+            self.combine_incomplete_segments(on_incomplete, self.last_incomplete_segment)
+            
+
         #if the player's intersection point changed, create and add a new line segment
         if self.current_intersection.x != p.intersection_point.x or self.current_intersection.y != p.intersection_point.y:
             new_intersection = Vector2(p.intersection_point.x, p.intersection_point.y)
@@ -372,9 +410,10 @@ class Trail():
         # incomplete = self.line_segments_incomplete.values()
         # incomplete = set.union(*incomplete) if incomplete else set()
 
-        for l in self.line_segments | self.line_segments_incomplete:
+        for l in self.line_segments_incomplete:
+            draw_line_ex(*l, 8.0, ORANGE)
+        for l in self.line_segments:
             draw_line_ex(*l, 8.0, self.color) # TODO: Use spline methods instead.
-        
     
 
 grid = Grid()
@@ -426,6 +465,11 @@ while not window_should_close():
         # if player.current_hline:
         #     draw_line_v(player.current_hline[0], player.current_hline[1],GREEN)
         draw_circle_v(player.intersection_point, 8.0, ORANGE)
+        if trail.last_incomplete_segment != ((),()):
+            draw_line_ex(
+                Vector2(trail.last_incomplete_segment[0][0], trail.last_incomplete_segment[0][1]),
+                Vector2(trail.last_incomplete_segment[1][0],trail.last_incomplete_segment[1][1]),
+                4.0, PURPLE)
         debug_catch()
 
     end_drawing()
