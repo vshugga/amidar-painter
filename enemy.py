@@ -48,7 +48,8 @@ class Enemy(Entity):
         y_too_close = abs(p.pos.y - self.pos.y) < self.collision_tolerance 
 
         if x_too_close and y_too_close:
-            p.enemy_collisions += 1
+            # p.enemy_collisions += 1
+            p.enemy_hit(self)
 
 
     def update(self):

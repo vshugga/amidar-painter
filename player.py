@@ -2,6 +2,8 @@ from pyray import *
 import raylib as rl
 from grid import Grid
 from entity import Entity
+from timer import Timer
+# from enemy import Enemy
 
 class Player(Entity):
     def __init__(self, x, y, width, height, current_line, grid:Grid) -> None:
@@ -9,7 +11,7 @@ class Player(Entity):
         self.cur_trail = [Vector2(x, y), self.pos] # trail that is drawn behind the player
         self.color = GREEN
         self.enemy_collisions = 0 # number of enemy collisions
-
+        self.hit_cooldown = Timer(3)
 
 
     def update(self):
@@ -21,7 +23,13 @@ class Player(Entity):
         # self.direction.y = -1
         dt = get_frame_time()
         self.move(dt)
+        self.hit_cooldown.update()
 
 
+    def enemy_hit(self, enemy):
+        if self.hit_cooldown.active:
+            return
+        self.enemy_collisions += 1
+        self.hit_cooldown.activate()
 
 
