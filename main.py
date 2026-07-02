@@ -242,8 +242,13 @@ player = Player(rect_origin.x, rect_origin.y+rect_y, 20, 20)
 
 
 
+def debug_catch():
+    if is_key_pressed(rl.KEY_D):
+        pass
+
 
 while not window_should_close():
+    debug_catch()
     player.update()
 
     begin_drawing()
