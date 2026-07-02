@@ -27,6 +27,7 @@ class Trail():
             if min(xs) <= p.drawn_pos.x <= max(xs) and min(ys) <= p.drawn_pos.y <= max(ys):
                 return l
     
+
     def add_incomplete_segment(self):
         '''Creates an incomplete line segment and combines with the previous one if it exists, else start it at the last intersection.'''
         p = self.player
@@ -74,6 +75,7 @@ class Trail():
         segment = (n_start, n_end)
         self.line_segments.add(segment)
         self.clean_incomplete_segments(segment)
+        self.update_completion(segment)
 
 
     def combine_incomplete_segments(self, l1, l2):
@@ -145,6 +147,20 @@ class Trail():
 
             if xs_contained and ys_contained:
                 self.line_segments_incomplete.remove(l)
+
+
+    def update_completion(self, segment):
+        '''Called whenever a complete segment is created to update completed rects.'''
+        # get all the rects that this line is part of
+        rects = self.grid.segment_rect_dict[segment] # if this causes a keyerror at some point, it is likely because the ordering of points is wrong in calculate segments.
+        for r in rects:
+            flag = False
+            for seg in self.grid.rect_corners[r]["segments"]:
+                if seg not in self.line_segments:
+                    flag = True
+                    break
+            if not flag:
+                self.grid.rect_corners[r]["complete"] = True
 
 
     def draw(self):

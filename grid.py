@@ -146,6 +146,8 @@ class Grid():
                 self.segment_rect_dict.setdefault(s, []).append(corner_point)
 
 
+            
+
     def draw(self):
         for p in self.h_positions + self.v_positions:
             draw_line_ex(*p,self.line_thickness, RED) #TODO: use spline instead

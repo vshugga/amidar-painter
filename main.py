@@ -41,7 +41,8 @@ while not window_should_close():
         'Segment count': len(trail.line_segments),
         'Incomplete count': len(trail.line_segments_incomplete),
         'Current trail':((player.cur_trail[0].x, player.cur_trail[0].y), (player.cur_trail[1].x, player.cur_trail[1].y)),
-        'Move direction':(player.move_dir.x, player.move_dir.y)
+        'Move direction':(player.move_dir.x, player.move_dir.y),
+        'Complete rects':[k for k,v in grid.rect_corners.items() if v['complete']]            
     }
     if is_key_pressed(debug_key):
         debug_mode = not debug_mode
@@ -75,6 +76,9 @@ while not window_should_close():
 
         for k, v in grid.rect_corners.items():
             draw_circle(int(k[0]), int(k[1]), 3.0, PURPLE)
+
+
+
         debug_catch()
 
     end_drawing()
