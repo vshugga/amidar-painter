@@ -45,7 +45,8 @@ while not window_should_close():
         'Incomplete count': len(trail.line_segments_incomplete),
         'Current trail':((player.cur_trail[0].x, player.cur_trail[0].y), (player.cur_trail[1].x, player.cur_trail[1].y)),
         'Move direction':(player.move_dir.x, player.move_dir.y),
-        'Complete rects':[k for k,v in grid.rect_corners.items() if v['complete']]            
+        'Complete rects':[k for k,v in grid.rect_corners.items() if v['complete']],
+        'Enemy collisions':player.enemy_collisions
     }
     if is_key_pressed(debug_key):
         debug_mode = not debug_mode

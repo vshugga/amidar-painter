@@ -8,6 +8,8 @@ class Player(Entity):
         super().__init__(x, y, width, height, current_line, grid)
         self.cur_trail = [Vector2(x, y), self.pos] # trail that is drawn behind the player
         self.color = GREEN
+        self.enemy_collisions = 0 # number of enemy collisions
+
 
 
     def update(self):

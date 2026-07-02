@@ -6,10 +6,10 @@ class Entity():
     def __init__(self, x, y, width, height, current_line, grid:Grid) -> None:
         self.pos = Vector2(x, y)
         self.size = Vector2(width, height)
-        self.speed = 500
+        self.speed = 200
         self.direction = Vector2() # direction controlled by player/enemy
         self.move_dir = Vector2() # actual movement direction after updates/constraints
-        # self.cur_trail = [Vector2(x, y), self.pos] # trail that is drawn behind the player
+        self.prev_pos = Vector2() # the position last frame
         self.drawn_pos = Vector2()
         self.drawn_offset = Vector2(self.size.x / -2, self.size.y / -2) # drawing offset so entity appears in the middle of the line
         self.intersection_point = Vector2(self.pos.x, self.pos.y) # the last intersection that the player hit/crossed
@@ -134,6 +134,9 @@ class Entity():
             add_y = self.direction.y * self.speed * dt
         else:
             add_x = self.direction.x * self.speed * dt
+
+        self.prev_pos.x = self.pos.x
+        self.prev_pos.y = self.pos.y
 
         new_x = self.pos.x + add_x
         new_y = self.pos.y + add_y

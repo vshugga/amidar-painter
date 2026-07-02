@@ -3,7 +3,7 @@ import raylib as rl
 from grid import Grid
 from player import Player
 from entity import Entity
-from timer import Timer
+# from timer import Timer
 from random import choice
 
 class Enemy(Entity):
@@ -15,6 +15,7 @@ class Enemy(Entity):
         self.turn_wait = 2 # wait this number of updates before changing directions.
         self.update_counter = 0
         self.speed = 100
+        self.collision_tolerance = 5 # how far away the player can be to trigger collision
         # self.timer = Timer()
 
     def line_callback(self, passed_dict:dict):
@@ -38,16 +39,16 @@ class Enemy(Entity):
         self.direction.y = choice(d)
 
     def check_player_collision(self, prev_pos):
-        '''check whether this enemy cros paths with the player next frame'''
-        min_x = min(prev_pos.x, self.pos.x)
-        max_x = max(prev_pos.x, self.pos.x)
-        min_y = min(prev_pos.y, self.pos.y)
-        max_y = max(prev_pos.y, self.pos.y)
-        in_x = min_x <= self.player.pos.x <= max_x
-        in_y = min_y <= self.player.pos.y <= max_y
+        '''check whether this enemy crossed paths with the player in the last update'''
+        p = self.player
+        if self.current_line != p.current_line:
+            return
 
-        if in_x and in_y:
-            print('Collision!')
+        x_too_close = abs(p.pos.x - self.pos.x) < self.collision_tolerance 
+        y_too_close = abs(p.pos.y - self.pos.y) < self.collision_tolerance 
+
+        if x_too_close and y_too_close:
+            p.enemy_collisions += 1
 
 
     def update(self):
