@@ -3,7 +3,7 @@ import raylib as rl
 from random import randrange
 
 class Grid():
-    def __init__(self, window_width, window_height, width=650, height=650, line_thickness=8.0, vertical_lines=6, h_lines_min=4, h_lines_max=6):
+    def __init__(self, window_width, window_height, width=650, height=650, line_thickness=8.0, vertical_lines=6):
         self.width = width
         self.height = height 
         self.line_thickness = line_thickness
@@ -11,44 +11,19 @@ class Grid():
         self.round_scores = 50 # round rect scores to the nearest 50
         self.score_divisor = 100
         self.score_font_size = 5
-        self.h_lines_range = (height // 10, width // 3) # min/max height of a cell
+        self.h_lines_range = (height // 10, width // 4) # min/max height of a cell
         self.cell_width = width/(vertical_lines-1)
+        self.h_line_nono_range = 20 # ensure that h lines on neighboring v lines are at least this far away
+        self.h_nudge = 50 # when h lines collide, nudge them by this amount
         self.v_positions = [(
                 Vector2(self.rect_origin.x+self.cell_width*i,self.rect_origin.y), 
                 Vector2(self.rect_origin.x+self.cell_width*i,self.rect_origin.y+height)) 
             for i in range(vertical_lines)
         ]
         self.vertical_x_positions = [self.rect_origin.x+self.cell_width*i for i in range(vertical_lines)]
+        self.vertical_lines = vertical_lines
 
-
-        self.h_positions = [] # pairs of vectors for lines left/right point
-        #TODO: This algorithm needs rewritten to avoid horizontal lines that are directly adjacent
-        # probably have the h_lines thing place them as it goes, placing the earliest it can (have only the first column be random)
-
-        for vl in range(vertical_lines-1): # -1 to prevent H lines on last v line
-            x = self.vertical_x_positions[vl]
-            y = self.rect_origin.y
-            h_lines = randrange(h_lines_min, h_lines_max)
-            for hl in range(h_lines):
-                ly = y
-                y += randrange(*self.h_lines_range)
-                if y > self.rect_origin.y+height - self.h_lines_range[0]: # do not place a horizontal line if it will be lower than lowest possible
-                    remaining = self.rect_origin.y+height-ly
-                    if remaining > self.h_lines_range[1]:
-                        y = (remaining//2) + ly # if the remaining cell size would be larger than allowed, split it in half
-                        # print('half on col ' + str(vl))
-                    else:
-                        break
-                start_h = Vector2(x, y)
-                end_h = Vector2(x+self.cell_width,y)
-                self.h_positions += [(start_h, end_h)]
-
-
-        #TODO: fix the corner edges           
-        top_h_line = [(Vector2(self.rect_origin.x, self.rect_origin.y), Vector2(self.rect_origin.x+width, self.rect_origin.y))]
-        bottom_h_line = [(Vector2(self.rect_origin.x, self.rect_origin.y+height), Vector2(self.rect_origin.x+width, self.rect_origin.y+height))]
-
-        self.h_positions += top_h_line + bottom_h_line
+        self.calcualte_h_lines()
 
         self.intersections = set()
         for v1, v2 in self.h_positions + self.v_positions:
@@ -57,6 +32,42 @@ class Grid():
 
         self.calculate_segments()
         self.calculate_scores()
+
+    def calcualte_h_lines(self):
+                
+        self.h_positions = [] # pairs of vectors for lines left/right point
+        #TODO: This algorithm needs rewritten to avoid horizontal lines that are directly adjacent
+        # probably have the h_lines thing place them as it goes, placing the earliest it can (have only the first column be random)
+
+        previous_ys = set() # y coordinates of the h lines of the previous vertical line
+        current_ys = set() # y coordinates of the h lines on this vertical line
+
+        for vl in range(self.vertical_lines - 1):
+            x = self.vertical_x_positions[vl]
+            y = self.rect_origin.y
+
+            while True:
+                y += randrange(*self.h_lines_range)
+                for h in previous_ys:
+                    dist = abs(h - y)
+                    if dist < self.h_line_nono_range:
+                        y = h + self.h_nudge 
+                if y + min(self.h_lines_range) > self.rect_origin.y + self.height:
+                    break
+                
+                current_ys.add(y)
+                start_h = Vector2(x, y)
+                end_h = Vector2(x+self.cell_width,y)
+                self.h_positions.append((start_h, end_h))
+
+            previous_ys = current_ys
+            current_ys = set()
+
+        #TODO: fix the corner edges           
+        top_h_line = [(Vector2(self.rect_origin.x, self.rect_origin.y), Vector2(self.rect_origin.x+self.width, self.rect_origin.y))]
+        bottom_h_line = [(Vector2(self.rect_origin.x, self.rect_origin.y+self.height), Vector2(self.rect_origin.x+self.width, self.rect_origin.y+self.height))]
+
+        self.h_positions += top_h_line + bottom_h_line
 
 
     def calculate_segments(self):
