@@ -1,3 +1,5 @@
+from re import I
+
 from pyray import *
 import raylib as rl
 from player import Player
@@ -8,20 +10,21 @@ from enemy import Enemy
 
 class Game():
     def __init__(self) -> None:
-        window_w, window_h = 1080, 720
+        self.window_w, self.window_h = 1080, 720
 
-        init_window(window_w, window_h, 'amidar')
+        init_window(self.window_w, self.window_h, 'amidar')
         set_exit_key(rl.KEY_ESCAPE)
         self.debug_key = rl.KEY_F3
         self.debug_mode = True
         # set_target_fps(144)
         # set_target_fps(1)
+        self.start()
 
-        self.grid = Grid(window_w, window_h)
+    def start(self):
+        '''initialize the game. also functions as a restart on game over'''
+        self.grid = Grid(self.window_w, self.window_h)
         self.player = Player(self.grid.rect_origin.x, self.grid.rect_origin.y+self.grid.height, 20, 20, self.grid.v_positions[0], self.grid)
         self.enemies = [Enemy(v[0].x, v[0].y+1, 20, 20, v, self.grid, self.player) for v in self.grid.v_positions]
-        # enemies =  []
-
 
 
     def update(self):
@@ -41,16 +44,21 @@ class Game():
             'Current trail':((self.player.cur_trail[0].x, self.player.cur_trail[0].y), (self.player.cur_trail[1].x, self.player.cur_trail[1].y)),
             'Move direction':(self.player.move_dir.x, self.player.move_dir.y),
             'Complete rects':[k for k,v in self.grid.rect_corners.items() if v['complete']],
-            'Enemy collisions':self.player.enemy_collisions,
-            'Hit cooldown':self.player.hit_cooldown.time_left
+            'Hit cooldown':self.player.hit_cooldown.time_left,
+            'Lives':self.player.lives
         }
         self.player.update()
-        # self.trail.update()
         for e in self.enemies:
             e.update()
 
+        if self.player.lives < 1:
+            self.lose() 
+
+
     def draw(self):
         # Draw the grid thing
+        begin_drawing()
+        clear_background(BLACK)
         self.grid.draw()
         self.player.trail.draw()
         self.player.draw()
@@ -76,14 +84,16 @@ class Game():
             for x, y in self.grid.intersections:
                 draw_circle(int(x), int(y), 1.5, WHITE)
 
+            end_drawing()
 
     def run(self):
         while not window_should_close():
             self.update()
-            begin_drawing()
-            clear_background(BLACK)
             self.draw()
-            end_drawing()
+
+    def lose(self):
+        self.start()
+
 
 
 if __name__ == "__main__":

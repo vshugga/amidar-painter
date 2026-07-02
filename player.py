@@ -11,7 +11,7 @@ class Player(Entity):
         super().__init__(x, y, width, height, current_line, grid)
         self.cur_trail = [Vector2(x, y), self.pos] # trail that is drawn behind the player
         self.color = GREEN
-        self.enemy_collisions = 0 # number of enemy collisions
+        self.lives = 3
         self.hit_cooldown = Timer(3)
         self.trail = Trail(self, self.grid, BLUE)
 
@@ -30,7 +30,7 @@ class Player(Entity):
     def enemy_hit(self, enemy):
         if self.hit_cooldown.active:
             return
-        self.enemy_collisions += 1
+        self.lives -= 1
         self.hit_cooldown.activate()
 
 
