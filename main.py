@@ -1,3 +1,4 @@
+from operator import itemgetter
 from pyray import *
 import raylib as rl
 from random import randrange
@@ -8,7 +9,7 @@ init_window(window_w, window_h, 'amidar')
 set_exit_key(rl.KEY_ESCAPE)
 debug_key = rl.KEY_F3
 debug_mode = True
-# set_target_fps(3)
+set_target_fps(30)
 
 
 def debug_catch():
@@ -70,7 +71,10 @@ class Grid():
 
     def draw(self):
         for p in self.v_positions + self.h_positions:
-            draw_line_ex(*p,self.line_thickness, RED)
+            draw_line_ex(*p,self.line_thickness, RED) #TODO: use spline instead
+
+        # intersections = self.v_positions + self.h_positions
+        # draw_spline_linear(intersections, len(intersections), self.line_thickness, RED)
 
 
 class Player():
@@ -79,7 +83,7 @@ class Player():
         self.size = Vector2(w, h)
         # self.line_thickness = line_thickness
         self.direction = Vector2() # player controlled direction
-        self.speed = 200
+        self.speed = 300
         self.move_dir = Vector2() # actual direction after updates
         self.cur_trail = [Vector2(x, y), self.pos] # trail that is drawn behind the player
         self.drawn_pos = Vector2()
@@ -89,10 +93,16 @@ class Player():
         # self.current_hline = ()
         self.intersection_point = Vector2(self.pos.x, self.pos.y)
         self.current_line = grid.v_positions[0]
+        self.on_vertical = self.current_line[0].x == self.current_line[0].x
         self.intersecting_line = ()
         self.grid = grid
         self.movedir_change = False
         self.stop_flag = True
+        self.at_intersection = True
+
+    def get_curline_tuple(self):
+        '''Get the players current line as a tuple ((x1, y1), (x2, y2)) '''
+        return ((self.current_line[0].x, self.current_line[0].y), (self.current_line[1].x, self.current_line[1].y))
 
     # TODO: transition this to use the intersection pass method instead
     def is_on_line(self, line):
@@ -150,9 +160,9 @@ class Player():
         add_x = 0.0
         add_y = 0.0
 
-        on_vertical = self.is_vertical(self.current_line)
+        self.on_vertical = self.is_vertical(self.current_line)
 
-        if on_vertical:
+        if self.on_vertical:
             add_y = self.direction.y * self.speed * dt
         else:
             add_x = self.direction.x * self.speed * dt
@@ -171,8 +181,10 @@ class Player():
         #     self.intersection_point.x = self.pos.x
         #     self.intersection_point.y = self.pos.y
 
-        # self.line_change = False
+        self.at_intersection = False
         if will_pass_line is not None:
+            self.at_intersection = True
+
             # print('will pass')
             # # self.line_change = True
             # self.intersection_point.x = self.pos.x
@@ -190,7 +202,7 @@ class Player():
                 self.intersection_point.y = self.pos.y
             else:
                 input_dir = self.direction.y
-                if on_vertical:
+                if self.on_vertical:
                     input_dir = self.direction.x
 
                 if (input_dir > 0 and is_up_right) or (input_dir < 0 and not is_up_right):
@@ -245,23 +257,72 @@ class Trail():
         # self.last_intersection = Vector2(player.pos.x, player.pos.y)
         self.current_intersection = Vector2(player.pos.x, player.pos.y)
         self.line_segments = set()
-        self.line_segments_incomplete = set()
+        self.last_incomplete_segment = ((), ())
+        # self.last_segment_endpos = ()
+
+        #TODO: it is redundant to have two of these storing the same data, but it is faster to draw this way.
+        self.line_segments_incomplete = set() 
+        # self.incomplete_dict = {} # keys = the line containing incomplete segments, values = list of incomplete segments
+        
         self.grid = grid
         self.color = color
 
+    def on_incomplete_segment(self):
+        '''if the player is on an incomplete segment (that is not the current trail), return it'''
+        p = self.player
+        for l in self.line_segments_incomplete: # TODO: optimization: loop through just the segments on current line.
+            if l == self.last_incomplete_segment:
+                return
+            xs = l[0][0], l[1][0]
+            ys = l[0][1], l[1][1]
+            if min(xs) <= p.drawn_pos.x <= max(xs) and min(ys) <= p.drawn_pos.y <= max(ys):
+                return l
+    
+    def add_incomplete_segment(self):
+        p = self.player
+
+        end = (p.drawn_pos.x, p.drawn_pos.y)
+
+        # this relies on being reset whenever player crosses an intersection (see update code) 
+        last_start = self.last_incomplete_segment[0]
+        last_end = self.last_incomplete_segment[1]        
+
+        # do not add an incomplete segment if the new line would end in the previous segment (shortens the line)!
+        if last_start and last_end:
+            xs = last_start[0], last_end[0]
+            ys = last_start[1], last_end[1]
+            inside_last_x = min(xs) <= end[0] <= max(xs)
+            inside_last_y = min(ys) <= end[1] <= max(ys)
+            if inside_last_x and inside_last_y:
+                return
+
+        # if the last ending point exists, use it as the new starting point and remove the old segment (instead of the intersection)
+        if last_end:
+            start = last_start  
+            self.line_segments_incomplete.remove(self.last_incomplete_segment)
+        else:
+            start = (self.current_intersection.x, self.current_intersection.y)
+
+        # do not store segments that are length 0
+        if start == end:
+            return
+
+        segment = (start, end)
+            
+
+        self.line_segments_incomplete.add(segment)
+        self.last_incomplete_segment = segment
+
+
+
+
+    def pop_incomplete_segment(self):
+        pass
 
     def update(self):
         p = self.player
-        
-        # if p.movedir_change:
-        #     if p.line_change:
-        #         ipoint = Vector2(p.intersection_point.x, p.intersection_point.y)
-        #         self.points.append(ipoint)
-        #     else:
-        #         self.points.append(p.drawn_pos) # Incomplete line segment
-        #     p.cur_trail[0] = p.intersection_point
-
-        
+        if p.at_intersection:
+            self.last_incomplete_segment = ((), ()) # needs reset when player crosses an intersection so incomplete segments combine correctly in add_incomplete_segment()
         
         #if the player's intersection point changed, create and add a new line segment
         if self.current_intersection.x != p.intersection_point.x or self.current_intersection.y != p.intersection_point.y:
@@ -271,25 +332,49 @@ class Trail():
             self.line_segments.add((segment_start, segment_end))
             self.current_intersection = new_intersection
             p.cur_trail[0] = p.intersection_point
-        # if players movement direction changed, store an incomplete line segment (only if a full line segment WASNT made)
+        # if players movement direction changed, store an incomplete line segment 
+        # (also only if a full line segment WASNT made)
         elif p.movedir_change:
-            segment_start = (self.current_intersection.x, self.current_intersection.y)
-            segment_end = (p.drawn_pos.x, p.drawn_pos.y)
-            self.line_segments_incomplete.add((segment_start, segment_end))
-            # self.combine_segments()
+            self.add_incomplete_segment()
 
-
+        # self.combine_incomplete_segments()
+        test = self.on_incomplete_segment()
         
+        pass
+
+    def lines_overlap(self, l1, l2):
+        pass
+
+    # def combine_incomplete_segments(self):
+
+    #     pass
+        # p = self.player
+        # curline = p.get_curline_tuple()
+
+        # # list of segments on the current line
+        # segments_on_line = self.incomplete_dict.get(curline, []) 
+
+        # xy = 1 if p.on_vertical else 0
+
+        # ranges = [(n[0][xy], n[1][xy]) for n in segments_on_line]
+
+        # pass
+
+            
+
 
 
     def draw(self):
         if self.player.cur_trail:
             draw_spline_segment_linear(self.player.cur_trail[0], self.player.cur_trail[1], grid.line_thickness, self.color)
         
-        # draw_spline_linear(self.points, len(self.points), grid.line_thickness, YELLOW)
-        for l in self.line_segments | self.line_segments_incomplete:
-            draw_line_ex(*l, 8.0, self.color)
+        # get the lines from the dictionary values and combine them into one set
+        # incomplete = self.line_segments_incomplete.values()
+        # incomplete = set.union(*incomplete) if incomplete else set()
 
+        for l in self.line_segments | self.line_segments_incomplete:
+            draw_line_ex(*l, 8.0, self.color) # TODO: Use spline methods instead.
+        
     
 
 grid = Grid()
@@ -313,6 +398,7 @@ while not window_should_close():
         'Trail points': len(trail.points),
         'Trail segments': '...'+str([l for l in trail.line_segments])[-50:],
         'Segment count': len(trail.line_segments),
+        'Incomplete count': len(trail.line_segments_incomplete),
         'Current trail':((player.cur_trail[0].x, player.cur_trail[0].y), (player.cur_trail[1].x, player.cur_trail[1].y)),
         'Move direction':(player.move_dir.x, player.move_dir.y)
     }
@@ -328,9 +414,9 @@ while not window_should_close():
     clear_background(BLACK)
 
     # Draw the grid thing
+    player.draw()
     grid.draw()
     trail.draw()
-    player.draw()
 
 
     if debug_mode:
