@@ -52,35 +52,76 @@ bottom_h_line = [(Vector2(rect_origin.x, rect_origin.y+rect_y), Vector2(rect_ori
 
 h_positions += top_h_line + bottom_h_line
 
+#TODO: change this to be one dict and simplify - there is an autocompletion bug when doing it this way
 # vertical and horizontal trail lines
-vt_lines = {} #{x:[(startY, endY)]}
-ht_lines = {} #{y:[(startX, endX)]}
+# vt_lines = {} #{x:[(startY, endY)]}
+# ht_lines = {} #{y:[(startX, endX)]}
 
-def add_t_line(num, start, end, type):
-    if type == 'v': 
-        d = vt_lines
-    elif type == 'h': 
-        d = ht_lines
-    else:
-        return
-    new = (round(start), round(end))
-    n = round(num)
-    if n not in d:
-        d[n] = new
-    old = (d[n][0], d[n][1])
+# def add_t_line(num, start, end, type):
+#     if type == 'v': 
+#         d = vt_lines
+#     elif type == 'h': 
+#         d = ht_lines
+#     else:
+#         return
+#     new = (round(start), round(end))
+#     n = round(num)
+#     if n not in d:
+#         d[n] = new
+#     old = (d[n][0], d[n][1])
 
-    d[n] = (
-        min(*new, *old),
-        max(*new, *old)
-    )
-
-
+#     d[n] = (
+#         min(*new, *old),
+#         max(*new, *old)
+#     )
 
 
+# vt_lines = {} #{x:[y1, y2, y3, y4...]}
+# ht_lines = {} #{y:[(startX, endX)]}
 
 # def add_trail(start_x, start_y, end_x, end_y):
-#     '''Add a new trail to draw'''
-#     trail_lines[(start_x, start_y)] = end_x, end_y
+#     # if the start_y == the last end_y, continue the same line
+
+#     sx, sy = round(start_x), round(start_y)
+#     ex, ey = end_x, end_y
+
+#     vt_lines.setdefault(sx, [start_y, end_y])#.extend([start_y, end_y])
+#     # vt_lines[sx].sort()
+
+#     for i, y in enumerate(vt_lines[sx]):
+#         if start_y == y:
+#             vt_lines[sx][i] = end_y
+#             return
+    
+#     vt_lines[sx].extend([start_y, end_y])
+
+    # # reverse[]
+    # # s_ys, e_ys = zip(*vt_lines[sx])
+    # for i, y in list(enumerate(vt_lines[sx]))[::-1]: # needs reversed so elements can be deleted without changing index values
+    #     if i % 2 != 0 or i < 1:
+    #         continue
+    #     # if y <= vt_lines[sx][i-1]:
+    #     #     pass
+
+    #     if y == vt_lines[sx][i-1]:
+    #         del vt_lines[sx][i-1:i+1]
+
+
+    # pass
+
+    #     # for vt_sy, vt_ey in vt_lines[sx]:
+    #     #     if vt_sy <= sy <= vt_ey: # if point is where in the existing line, extend it
+    #     #         vt_lines[sx][1] = ey
+    #     #     else:
+    #     #         vt_lines[
+
+
+
+trails = []
+
+def add_trail(start_x, start_y, end_x, end_y):
+    trails.append((Vector2(start_x, start_y), Vector2(end_x, end_y)))
+
 
 
 class Player():
@@ -89,7 +130,7 @@ class Player():
         self.size = Vector2(w, h)
         # self.line_thickness = line_thickness
         self.direction = Vector2()
-        self.speed = 500
+        self.speed = 100
 
     def update(self):
         self.direction.x = int(is_key_down(rl.KEY_RIGHT)) - int(is_key_down(rl.KEY_LEFT))
@@ -101,22 +142,29 @@ class Player():
         old_x = self.pos.x
         old_y = self.pos.y
 
-        if new_x != self.pos.x:
-            for hl in h_positions:
-                if -1 < hl[0].y - new_y < 1 and hl[0].x <= new_x <= hl[1].x:
-                    self.pos.y = hl[0].y
-                    # ht_lines[self.pos.y] = (self.pos.x, new_x)
-                    add_t_line(self.pos.y, self.pos.x, new_x, 'h')
-                    self.pos.x = new_x
-                    break
+
+
+
         if new_y != self.pos.y:
             for vl in v_positions:
-                if -1 < vl[0].x - new_x < 1 and vl[0].y <= new_y <= vl[1].y:
-                    # self.pos.x = vl[0].x # for some reason this breaks movement to h lines
+                # if -1 < vl[0].x - new_x < 1 and vl[0].y <= new_y <= vl[1].y:
+                if round(new_x) == vl[0].x and vl[0].y <= new_y <= vl[1].y:
+                    self.pos.x = vl[0].x
                     # vt_lines[self.pos.x] = (self.pos.y, new_y)
-                    add_t_line(self.pos.x, self.pos.y, new_y, 'v')
+                    # add_trail(self.pos.x, self.pos.y, new_y, 'v')
+                    add_trail(self.pos.x, self.pos.y, new_x, new_y)
                     self.pos.y = new_y
                     break
+        if new_x != self.pos.x:
+            for hl in h_positions:
+                # if -1 < hl[0].y - new_y < 1 and hl[0].x <= new_x <= hl[1].x:
+                if round(new_y) == hl[0].y and hl[0].x <= new_x <= hl[1].x:
+                    self.pos.y = hl[0].y
+                    # ht_lines[self.pos.y] = (self.pos.x, new_x)
+                    add_trail(self.pos.x, self.pos.y, new_x, new_y)
+                    self.pos.x = new_x
+                    break
+
         
         # if old_x != self.pos.x or old_y != self.pos.y:
         #     add_trail(old_x, old_y, self.pos.x, self.pos.y)
@@ -146,14 +194,20 @@ while not window_should_close():
         draw_line_ex(*p,line_thickness, RED)
 
 
-    for x, ys in vt_lines.items():
-        start_y, end_y = ys
-        draw_line_ex(Vector2(x, start_y), Vector2(x, end_y), line_thickness, YELLOW)
-    for y, xs in ht_lines.items():
-        start_x, end_x = xs
-        draw_line_ex(Vector2(start_x, y), Vector2(end_x, y), line_thickness, YELLOW)
+    # for x, ys in vt_lines.items():
+    #     start_y, end_y = ys
+    #     draw_line_ex(Vector2(x, start_y), Vector2(x, end_y), line_thickness, YELLOW)
+    # for y, xs in ht_lines.items():
+    #     start_x, end_x = xs
+    #     draw_line_ex(Vector2(start_x, y), Vector2(end_x, y), line_thickness, YELLOW)
 
     #draw player
+
+    # for start, end in trails:
+    #     draw_line_ex(start, end, line_thickness, YELLOW)
+    
+    print(f"trails: {len(trails)} Player pos: {player.pos.x}, {player.pos.y}")
+
     player.draw()
 
     draw_fps(0,0)
