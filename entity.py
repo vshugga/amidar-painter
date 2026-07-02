@@ -20,6 +20,8 @@ class Entity():
         self.movedir_change = False
         # self.stop_flag = True
         self.at_intersection = True
+        self.color = GREEN # default entity color
+        self.is_up_right = False # stores whether the intersecting line is up/right or down/left
 
     def get_curline_tuple(self):
         '''Get the entities current line as a tuple ((x1, y1), (x2, y2)) '''
@@ -42,7 +44,7 @@ class Entity():
 
     # TODO: possibly combine with above function somehow to avoid looping through lines twice
     def get_passed_line(self, p1, p2):
-        '''Get the first intersecting line between two points, and the side (1 for right/down, 0 for left/up)
+        '''Get the first intersecting line between two points, and the side (True for right/down, False for left/up)
         Can return the self.current_line
         '''
         #TODO: Possible optimization - only check the lines that are attached to the current line. (store this for each line in the grid)
@@ -53,7 +55,7 @@ class Entity():
                 if l[0].x != p1.x and l[1].x != p1.x:
                     continue
                 if min(p1.y, p2.y) <= l[0].y <= max(p1.y, p2.y):
-                    return l, int(l[0].x == p1.x)
+                    return l, l[0].x == p1.x
 
         if p1.y == p2.y:
             for l in self.grid.v_positions:
@@ -62,15 +64,15 @@ class Entity():
                 if l[0].y != p1.y and l[1].y != p1.y:
                     continue
                 if min(p1.x, p2.x) <= l[0].x <= max(p1.x, p2.x):
-                    return l, int(l[0].y == p1.y)
+                    return l, l[0].y == p1.y
 
-        return None, None
+        return None, False
 
     def is_vertical(self, line): #TODO: move to grid?
         return line[0].x == line[1].x
 
 
-    def move(self, dt):
+    def move(self, dt, line_callback=None):
         add_x = 0.0
         add_y = 0.0
 
@@ -87,9 +89,13 @@ class Entity():
         x_clamped = clamp(new_x, self.current_line[0].x, self.current_line[1].x)
         y_clamped = clamp(new_y, self.current_line[0].y, self.current_line[1].y)
         
+
         self.intersecting_line = self.get_intersecting_line()
         will_pass_line, is_up_right = self.get_passed_line(self.pos, Vector2(x_clamped, y_clamped))
         # prev_line = self.current_line
+
+        if line_callback and will_pass_line is not None:
+            line_callback(will_pass_line, is_up_right)
 
         self.at_intersection = False
         if will_pass_line is not None:
@@ -135,4 +141,8 @@ class Entity():
 
         self.movedir_change = newdir_x != self.move_dir.x or newdir_y != self.move_dir.y
         self.move_dir = newdir
-    
+
+    def draw(self):
+        self.drawn_pos = Vector2(round(self.pos.x), round(self.pos.y))
+        pos_offset = vector2_add(self.drawn_pos, self.drawn_offset)
+        draw_rectangle_v(pos_offset, self.size, self.color)

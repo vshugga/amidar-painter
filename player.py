@@ -7,6 +7,7 @@ class Player(Entity):
     def __init__(self, x, y, width, height, current_line, grid:Grid) -> None:
         super().__init__(x, y, width, height, current_line, grid)
         self.cur_trail = [Vector2(x, y), self.pos] # trail that is drawn behind the player
+        self.color = GREEN
 
 
     def update(self):
@@ -20,8 +21,5 @@ class Player(Entity):
         self.move(dt)
 
 
-    def draw(self):
-        self.drawn_pos = Vector2(round(self.pos.x), round(self.pos.y))
-        pos_offset = vector2_add(self.drawn_pos, self.drawn_offset)
-        draw_rectangle_v(pos_offset, self.size, GREEN)
+
 
