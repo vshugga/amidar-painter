@@ -19,7 +19,7 @@ def debug_catch():
 
 
 grid = Grid(window_w, window_h)
-player = Player(grid.rect_origin.x, grid.rect_origin.y+grid.height, 20, 20, grid)
+player = Player(grid.rect_origin.x, grid.rect_origin.y+grid.height, 20, 20, grid.v_positions[0], grid)
 trail = Trail(player, grid, BLUE)
 
 

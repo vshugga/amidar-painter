@@ -3,23 +3,22 @@ import raylib as rl
 from grid import Grid
 
 class Entity():
-    def __init__(self, x, y, width, height, grid:Grid) -> None:
+    def __init__(self, x, y, width, height, current_line, grid:Grid) -> None:
         self.pos = Vector2(x, y)
         self.size = Vector2(width, height)
-        # self.line_thickness = line_thickness
-        self.direction = Vector2() # direction controlled by player/enemy
         self.speed = 500
+        self.direction = Vector2() # direction controlled by player/enemy
         self.move_dir = Vector2() # actual movement direction after updates/constraints
-        self.cur_trail = [Vector2(x, y), self.pos] # trail that is drawn behind the player
+        # self.cur_trail = [Vector2(x, y), self.pos] # trail that is drawn behind the player
         self.drawn_pos = Vector2()
-        self.drawn_offset = Vector2(self.size.x / -2, self.size.y / -2) # drawing offset so player appears in the middle of the line
-        self.intersection_point = Vector2(self.pos.x, self.pos.y)
-        self.current_line = grid.v_positions[0]
+        self.drawn_offset = Vector2(self.size.x / -2, self.size.y / -2) # drawing offset so entity appears in the middle of the line
+        self.intersection_point = Vector2(self.pos.x, self.pos.y) # the last intersection that the player hit/crossed
+        self.grid = grid
+        self.current_line = current_line
         self.on_vertical = self.current_line[0].x == self.current_line[0].x
         self.intersecting_line = ()
-        self.grid = grid
         self.movedir_change = False
-        self.stop_flag = True
+        # self.stop_flag = True
         self.at_intersection = True
 
     def get_curline_tuple(self):

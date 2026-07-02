@@ -4,8 +4,10 @@ from grid import Grid
 from entity import Entity
 
 class Player(Entity):
-    def __init__(self, x, y, width, height, grid:Grid) -> None:
-        super().__init__(x, y, width, height, grid)
+    def __init__(self, x, y, width, height, current_line, grid:Grid) -> None:
+        super().__init__(x, y, width, height, current_line, grid)
+        self.cur_trail = [Vector2(x, y), self.pos] # trail that is drawn behind the player
+
 
     def update(self):
         self.direction.x = int(is_key_down(rl.KEY_RIGHT)) - int(is_key_down(rl.KEY_LEFT))
