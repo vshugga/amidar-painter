@@ -170,6 +170,7 @@ class Entity():
 
                 input_dir = self.direction
 
+                self.passed_intersections.append(int_vector)
                 if x_dir and y_dir:
                     if input_dir.x or input_dir.y:
                         self.current_line = new_line
@@ -178,7 +179,6 @@ class Entity():
                     self.current_line = new_line
                     break      
 
-                self.passed_intersections.append(int_vector)
 
 
         prev_x = self.pos.x

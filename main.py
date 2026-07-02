@@ -12,7 +12,7 @@ set_exit_key(rl.KEY_ESCAPE)
 debug_key = rl.KEY_F3
 debug_mode = True
 # set_target_fps(5)
-set_target_fps(1)
+# set_target_fps(1)
 
 
 def debug_catch():
@@ -83,6 +83,8 @@ while not window_should_close():
 
         for k, v in grid.rect_corners.items():
             draw_circle(int(k[0]), int(k[1]), 3.0, PURPLE)
+        for x, y in grid.intersections:
+            draw_circle(int(x), int(y), 1.5, WHITE)
 
 
 

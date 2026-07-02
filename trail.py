@@ -99,7 +99,7 @@ class Trail():
 
 
     def update(self):
-        return
+        # return
         p = self.player
 
         # needs reset when player crosses an intersection so incomplete segments combine correctly in add_incomplete_segment()
@@ -118,14 +118,18 @@ class Trail():
         # if self.current_intersection.x != p.intersection_point.x or self.current_intersection.y != p.intersection_point.y:
 
         # if the player passed intersections, add line segments for each
-        if p.will_pass and (self.current_intersection.x != p.intersection_point.x or self.current_intersection.y != p.intersection_point.y):
+        if p.passed_intersections and (self.current_intersection.x != p.intersection_point.x or self.current_intersection.y != p.intersection_point.y):
             intersections = [(self.current_intersection.x, self.current_intersection.y)]
             for intsc in p.passed_intersections:
-                intersections.append(intsc)
+                point = (intsc.x, intsc.y)
+                intersections.append(point)
                 
-            for i, intsect in enumerate(intersections[:1]):
+            for i, intsect in enumerate(intersections):
+                if i < 1: continue
                 start = intersections[i-1]
                 end = intsect
+                if start == end:
+                    continue
                 self.add_complete_segment(start, end)
 
             self.current_intersection = Vector2(p.intersection_point.x, p.intersection_point.y)
