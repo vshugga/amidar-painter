@@ -239,13 +239,15 @@ class Player():
 
 
 class Trail():
-    def __init__(self, player:Player, grid:Grid) -> None:
+    def __init__(self, player:Player, grid:Grid, color:Color) -> None:
         self.player = player
         self.points = [Vector2(player.pos.x, player.pos.y)]
         # self.last_intersection = Vector2(player.pos.x, player.pos.y)
         self.current_intersection = Vector2(player.pos.x, player.pos.y)
         self.line_segments = set()
+        self.line_segments_incomplete = set()
         self.grid = grid
+        self.color = color
 
 
     def update(self):
@@ -258,31 +260,41 @@ class Trail():
         #     else:
         #         self.points.append(p.drawn_pos) # Incomplete line segment
         #     p.cur_trail[0] = p.intersection_point
-        
 
         
-        #if the player's intersection point changed 
+        
+        #if the player's intersection point changed, create and add a new line segment
         if self.current_intersection.x != p.intersection_point.x or self.current_intersection.y != p.intersection_point.y:
             new_intersection = Vector2(p.intersection_point.x, p.intersection_point.y)
             segment_start = (self.current_intersection.x, self.current_intersection.y)
             segment_end = (new_intersection.x, new_intersection.y)
             self.line_segments.add((segment_start, segment_end))
             self.current_intersection = new_intersection
+            p.cur_trail[0] = p.intersection_point
+        # if players movement direction changed, store an incomplete line segment (only if a full line segment WASNT made)
+        elif p.movedir_change:
+            segment_start = (self.current_intersection.x, self.current_intersection.y)
+            segment_end = (p.drawn_pos.x, p.drawn_pos.y)
+            self.line_segments_incomplete.add((segment_start, segment_end))
+            # self.combine_segments()
+
+
+        
 
 
     def draw(self):
-        # if self.player.cur_trail:
-        #     draw_spline_segment_linear(self.player.cur_trail[0], self.player.cur_trail[1], grid.line_thickness, YELLOW)
+        if self.player.cur_trail:
+            draw_spline_segment_linear(self.player.cur_trail[0], self.player.cur_trail[1], grid.line_thickness, self.color)
         
         # draw_spline_linear(self.points, len(self.points), grid.line_thickness, YELLOW)
-        for l in self.line_segments:
-            draw_line_ex(*l, 8.0, BLUE)
+        for l in self.line_segments | self.line_segments_incomplete:
+            draw_line_ex(*l, 8.0, self.color)
 
     
 
 grid = Grid()
 player = Player(grid.rect_origin.x, grid.rect_origin.y+grid.height, 20, 20, grid)
-trail = Trail(player, grid)
+trail = Trail(player, grid, BLUE)
 
 
 while not window_should_close():
