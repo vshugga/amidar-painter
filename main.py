@@ -85,7 +85,8 @@ class Game():
             for x, y in self.grid.intersections:
                 draw_circle(int(x), int(y), 1.5, WHITE)
 
-            end_drawing()
+        end_drawing()
+
 
     def run(self):
         while not window_should_close():

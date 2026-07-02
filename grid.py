@@ -10,7 +10,7 @@ class Grid():
         self.rect_origin = Vector2((window_width/2)-(width/2),(window_height/2)-(height/2))
         self.round_scores = 50 # round rect scores to the nearest 50
         self.score_divisor = 100
-
+        self.score_font_size = 5
         self.h_lines_range = (height // 10, width // 3) # min/max height of a cell
         self.cell_width = width/(vertical_lines-1)
         self.v_positions = [(
@@ -19,6 +19,7 @@ class Grid():
             for i in range(vertical_lines)
         ]
         self.vertical_x_positions = [self.rect_origin.x+self.cell_width*i for i in range(vertical_lines)]
+
 
         self.h_positions = [] # pairs of vectors for lines left/right point
         #TODO: This algorithm needs rewritten to avoid horizontal lines that are directly adjacent
@@ -164,7 +165,10 @@ class Grid():
             if v["complete"]:
                 draw_rectangle(int(rect[0]), int(rect[1]), int(self.cell_width), int(v["height"]), WHITE) #TODO: ugly int conversions... use some other function?
             else:
-                draw_text(str(v["score"]), int(v["center"][0]), int(v["center"][1]), 5, WHITE)
+                text = str(v["score"])
+                text_size = measure_text(text, self.score_font_size)
+                text_pos = (int((v["center"][0])-(text_size/2)),int(v["center"][1]))
+                draw_text(text, *text_pos, self.score_font_size, WHITE)
 
 
         # intersections = self.v_positions + self.h_positions
