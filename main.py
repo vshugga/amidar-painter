@@ -8,7 +8,7 @@ init_window(window_w, window_h, 'amidar')
 set_exit_key(rl.KEY_ESCAPE)
 debug_key = rl.KEY_F3
 debug_mode = True
-# set_target_fps(5)
+# set_target_fps(3)
 
 
 def debug_catch():
@@ -114,8 +114,9 @@ class Player():
         '''Get the first intersecting line between two points, and the side (1 for right/down, 0 for left/up)
         Can return the self.current_line
         '''
+        #TODO: Possible optimization - only check the lines that are attached to the current line. (store this for each line in the grid)
         if p1.x == p2.x:
-            for l in self.grid.h_positions:
+            for l in self.grid.h_positions: 
                 # if l == self.current_line:
                 #     continue
                 if l[0].x != p1.x and l[1].x != p1.x:
@@ -166,10 +167,24 @@ class Player():
         will_pass_line, is_up_right = self.get_passed_line(self.pos, Vector2(x_clamped, y_clamped))
         prev_line = self.current_line
 
-        # TODO: This whole thing is abysmally repetitive. fix it
-        if will_pass_line:
+        # if self.intersecting_line:
+        #     self.intersection_point.x = self.pos.x
+        #     self.intersection_point.y = self.pos.y
+
+        # self.line_change = False
+        if will_pass_line is not None:
             # print('will pass')
-            if will_pass_line == self.current_line and self.intersecting_line:
+            # # self.line_change = True
+            # self.intersection_point.x = self.pos.x
+            # self.intersection_point.y = self.pos.y
+
+            if is_up_right: # cleaner code at the expense of more calculations per frame
+                new_intersection = Vector2(will_pass_line[0].x, will_pass_line[0].y)
+            else:
+                new_intersection = Vector2(will_pass_line[1].x, will_pass_line[1].y)
+
+
+            if will_pass_line == self.current_line and self.intersecting_line: # catches whether player is at T intersection
                 self.current_line = self.intersecting_line
                 self.intersection_point.x = self.pos.x
                 self.intersection_point.y = self.pos.y
@@ -178,19 +193,21 @@ class Player():
                 if on_vertical:
                     input_dir = self.direction.x
 
-                if is_up_right: # cleaner code at the expense of more calculations per frame
-                    new_intersection = Vector2(will_pass_line[0].x, will_pass_line[0].y)
-                else:
-                    new_intersection = Vector2(will_pass_line[1].x, will_pass_line[1].y)
-
                 if (input_dir > 0 and is_up_right) or (input_dir < 0 and not is_up_right):
                     self.current_line = will_pass_line
-                    self.intersection_point = new_intersection
+            
+            self.intersection_point = new_intersection
+
+            # if is_up_right:
+            #     self.intersection_point = will_pass_line[0]
+            # else:
+            #     self.intersection_point = will_pass_line[1]
 
 
-        self.line_change = False
-        if prev_line is not self.current_line:
-            self.line_change = True
+
+        # self.line_change = False
+        # if prev_line is not self.current_line:
+        #     self.line_change = True
             # self.intersection_point.x = self.current_line
 
         prev_x = self.pos.x
@@ -225,7 +242,8 @@ class Trail():
     def __init__(self, player:Player, grid:Grid) -> None:
         self.player = player
         self.points = [Vector2(player.pos.x, player.pos.y)]
-        self.last_intersection = Vector2(player.pos.x, player.pos.y)
+        # self.last_intersection = Vector2(player.pos.x, player.pos.y)
+        self.current_intersection = Vector2(player.pos.x, player.pos.y)
         self.line_segments = set()
         self.grid = grid
 
@@ -242,13 +260,14 @@ class Trail():
         #     p.cur_trail[0] = p.intersection_point
         
 
-        if p.line_change:
+        
+        #if the player's intersection point changed 
+        if self.current_intersection.x != p.intersection_point.x or self.current_intersection.y != p.intersection_point.y:
             new_intersection = Vector2(p.intersection_point.x, p.intersection_point.y)
-            segment_start = (self.last_intersection.x, self.last_intersection.y)
+            segment_start = (self.current_intersection.x, self.current_intersection.y)
             segment_end = (new_intersection.x, new_intersection.y)
-            # self.lines.append(newseg)
             self.line_segments.add((segment_start, segment_end))
-            self.last_intersection = new_intersection
+            self.current_intersection = new_intersection
 
 
     def draw(self):
@@ -281,6 +300,7 @@ while not window_should_close():
         # ],
         'Trail points': len(trail.points),
         'Trail segments': '...'+str([l for l in trail.line_segments])[-50:],
+        'Segment count': len(trail.line_segments),
         'Current trail':((player.cur_trail[0].x, player.cur_trail[0].y), (player.cur_trail[1].x, player.cur_trail[1].y)),
         'Move direction':(player.move_dir.x, player.move_dir.y)
     }
